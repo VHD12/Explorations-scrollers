@@ -1,0 +1,853 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>The Archive — scroll listing study</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500;1,600&family=JetBrains+Mono:wght@400;500&family=Ma+Shan+Zheng&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --accent:#7B5CFF;
+    --sw:min(820px, 76vw);           /* scroll width */
+    --hs:min(560px, 66vh);           /* paper height when fully unrolled */
+    --stoolW:min(720px, 64vw);
+    --stoolTop:58vh;
+    --fiber:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='300'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.012 .9' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='1.2 0 0 0 -.1  1.2 0 0 0 -.1  1.2 0 0 0 -.1  0 0 0 0 .35'/></filter><rect x='-20' y='-20' width='340' height='340' filter='url(%23n)'/></svg>");
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    color:#efe6d2; overflow:hidden;
+    font-family:'Cormorant Garamond',Georgia,serif; -webkit-font-smoothing:antialiased;
+    background:radial-gradient(120% 90% at 50% 38%, #2c2016 0%, #17110b 55%, #0a0705 100%);
+  }
+
+  /* ───── an ink-wash landscape on old silk, painted once ───── */
+  .silk{position:fixed; inset:0; z-index:0; pointer-events:none;
+    background:var(--fiber); background-size:300px; opacity:.5; mix-blend-mode:overlay}
+  .land{position:fixed; left:0; right:0; bottom:0; width:100%; height:100%; z-index:1; pointer-events:none}
+  .mistband{position:fixed; left:-15vw; right:-15vw; top:44vh; height:22vh; z-index:2; pointer-events:none;
+    background:radial-gradient(50% 50% at 50% 50%, rgba(232,214,180,.07), transparent 70%);
+    animation:drift 40s ease-in-out infinite alternate; will-change:transform}
+  @keyframes drift{from{transform:translateX(-5vw)} to{transform:translateX(5vw)}}
+
+  /* the floor the stool stands on: dark boards, lit near the stool */
+  .floor{position:fixed; left:0; right:0; bottom:0; z-index:2; pointer-events:none;
+    top:calc(var(--stoolTop) + var(--stoolW) * .33);
+    background:
+      radial-gradient(42% 60% at 50% 0%, rgba(255,170,96,.10), transparent 70%),
+      repeating-linear-gradient(to bottom, rgba(255,230,200,.035) 0 1px, transparent 1px 26px),
+      linear-gradient(#1c130c, #0b0705);
+    box-shadow:0 -1px 0 rgba(255,220,170,.08)}
+
+  /* paper lanterns hang at the sides; they are the only light */
+  .glow{position:fixed; inset:0; z-index:3; pointer-events:none;
+    background:
+      radial-gradient(circle at 9% 30%, rgba(255,128,52,.20), transparent 26%),
+      radial-gradient(circle at 91% 30%, rgba(255,128,52,.20), transparent 26%),
+      radial-gradient(60% 40% at 50% var(--stoolTop), rgba(255,170,96,.10), transparent 70%);
+    animation:flicker 5.3s steps(1) infinite}
+  @keyframes flicker{0%{opacity:1} 13%{opacity:.88} 21%{opacity:.97} 37%{opacity:.9} 52%{opacity:1} 68%{opacity:.86} 81%{opacity:.95}}
+  .lantern{position:fixed; top:0; z-index:4; width:84px; transform-origin:50% 0; pointer-events:none;
+    animation:swing 7s ease-in-out infinite}
+  .lantern.l{left:calc(9% - 42px)} .lantern.r{left:calc(91% - 42px); animation-delay:-3.1s}
+  @keyframes swing{0%,100%{transform:rotate(-1.6deg)} 50%{transform:rotate(1.6deg)}}
+  .lantern i{display:block; margin:0 auto}
+  .lantern .str{width:2px; height:15vh; background:linear-gradient(#000, #4a3420)}
+  .lantern .cap{width:44px; height:10px; border-radius:2px; background:linear-gradient(#d8b25a, #7a5a22)}
+  .lantern .body{position:relative; width:84px; height:100px; border-radius:46% / 50%;
+    background:radial-gradient(circle at 50% 45%, #ffd88a 0%, #f06a32 34%, #b0261b 68%, #5c120d 100%);
+    box-shadow:0 0 50px 14px rgba(255,110,40,.32)}
+  .lantern .body::before{content:''; position:absolute; inset:0; border-radius:inherit;
+    background:repeating-linear-gradient(90deg, rgba(70,10,5,.32) 0 2px, transparent 2px 14px);
+    -webkit-mask-image:radial-gradient(closest-side, #000 60%, transparent); mask-image:radial-gradient(closest-side, #000 60%, transparent)}
+  .lantern .body b{position:absolute; inset:0; display:grid; place-items:center; font-family:'Ma Shan Zheng',serif;
+    font-weight:400; font-size:34px; color:rgba(80,12,6,.72)}
+  .lantern .tas{width:9px; height:46px; margin-top:-1px;
+    background:repeating-linear-gradient(90deg, #b3261e 0 1px, #6f150e 1px 2px);
+    -webkit-mask-image:linear-gradient(#000 70%, transparent); mask-image:linear-gradient(#000 70%, transparent)}
+
+  /* ───── the stool ───── */
+  .stool{position:fixed; left:50%; top:var(--stoolTop); width:var(--stoolW); transform:translateX(-50%);
+    z-index:5; pointer-events:none; transition:opacity .8s ease, transform .8s ease}
+  .stool svg{display:block; width:100%; height:auto; overflow:visible}
+  .stool::after{content:''; position:absolute; left:6%; right:6%; bottom:-10px; height:26px; z-index:-1;
+    background:radial-gradient(closest-side, rgba(0,0,0,.75), transparent); }
+  body.reading .stool{opacity:.35; transform:translateX(-50%) translateY(10px)}
+
+  /* ───── words ───── */
+  .words{position:fixed; inset:0; z-index:6; pointer-events:none; transition:opacity .7s ease}
+  body.reading .words{opacity:0}
+  .title{position:absolute; left:0; right:0; top:13vh; text-align:center}
+  .big{font-family:'Cinzel',serif; font-weight:400; font-size:clamp(40px, 7.4vw, 112px);
+    letter-spacing:.05em; line-height:1; color:#f4ead6; text-shadow:0 2px 30px rgba(0,0,0,.6)}
+  .sub{margin-top:14px; font-style:italic; font-size:clamp(18px,1.9vw,26px); color:rgba(244,234,214,.72)}
+  .sub i{font-style:normal; font-family:'Ma Shan Zheng',serif; color:var(--accent); margin:0 .4em; transition:color 1s}
+  .in{animation:rise .9s cubic-bezier(.16,1,.3,1) both}
+  @keyframes rise{from{opacity:0; transform:translateY(14px)} to{opacity:1; transform:none}}
+  .side{position:absolute; top:calc(var(--stoolTop) - 70px); font-family:'JetBrains Mono',monospace;
+    font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:rgba(244,234,214,.6); line-height:1.9}
+  .side.l{left:clamp(16px,6vw,96px)} .side.r{right:clamp(16px,6vw,96px); text-align:right}
+  .side b{display:block; font-family:'Ma Shan Zheng',serif; font-weight:400; font-size:30px; letter-spacing:0;
+    color:var(--accent); line-height:1.2}
+
+  .chrome{position:fixed; inset:0; z-index:30; pointer-events:none;
+    padding:26px clamp(16px,3.2vw,48px); display:flex; flex-direction:column; justify-content:space-between}
+  .row{display:flex; justify-content:space-between; align-items:flex-start; gap:20px}
+  .mono{font-family:'JetBrains Mono',monospace; font-size:10.5px; letter-spacing:.16em; text-transform:uppercase}
+  .dim{color:rgba(244,234,214,.45)}
+  .counter{white-space:nowrap; font-family:'Cinzel',serif; font-size:26px; letter-spacing:.08em; color:var(--accent)}
+  .counter small{font-size:12px; color:rgba(244,234,214,.4); margin-left:6px}
+  .close{pointer-events:auto; opacity:0; transform:translateY(-6px); transition:opacity .4s, transform .4s;
+    background:none; border:1px solid rgba(244,234,214,.3); color:#efe6d2; border-radius:100px;
+    padding:9px 16px; cursor:pointer; font:inherit; white-space:nowrap}
+  body.reading .close{opacity:1; transform:none}
+  body:not(.reading) .close{pointer-events:none}
+
+  /* five seals to jump between scrolls */
+  .pager{position:fixed; left:50%; bottom:24px; transform:translateX(-50%); z-index:31; display:flex; gap:10px;
+    transition:opacity .5s}
+  body.reading .pager{opacity:0; pointer-events:none}
+  .pager button{width:34px; height:34px; display:grid; place-items:center; cursor:pointer;
+    font-family:'Ma Shan Zheng',serif; font-size:19px; color:rgba(239,230,210,.6);
+    background:transparent; border:1px solid rgba(239,230,210,.25); border-radius:3px;
+    transition:background .3s, color .3s, border-color .3s, transform .3s}
+  .pager button:hover{border-color:rgba(239,230,210,.6); color:#efe6d2}
+  .pager button.on{background:#b3261e; border-color:#b3261e; color:#f6e3d0; transform:rotate(-4deg)}
+
+  /* ───── the scrolls ───── */
+  .stage{position:fixed; inset:0; z-index:7}
+  .scroll{
+    --o:0; --rt:40px; --kh:52px;
+    position:absolute; left:50%; top:50%; width:var(--sw);
+    height:calc(var(--rt) * 2 + var(--o) * var(--hs));
+    will-change:transform,opacity; cursor:pointer;
+  }
+  .scroll.active{cursor:default}
+
+  .roll{position:absolute; left:0; right:0; height:var(--rt); z-index:3; border-radius:6px;
+    background:
+      linear-gradient(to bottom, rgba(0,0,0,.7) 0%, rgba(255,255,255,.22) 24%, rgba(255,255,255,.06) 44%,
+                      rgba(0,0,0,.18) 70%, rgba(0,0,0,.8) 100%),
+      var(--pattern),
+      var(--silk);
+    box-shadow:0 12px 20px -12px rgba(0,0,0,.95)}
+  .roll.top{top:0; background-position:0 0, 0 calc(var(--o) * -620px), 0 0}
+  .roll.bot{bottom:0; background-position:0 0, 0 calc(var(--o) * 620px), 0 0}
+  .roll::before,.roll::after{content:''; position:absolute; top:50%; width:16px; height:58%;
+    transform:translateY(-50%);
+    background:linear-gradient(to bottom, #1a120b, #6b4a2c 35%, #2c1d10 70%, #120c07)}
+  .roll::before{left:-14px} .roll::after{right:-14px}
+  .knob{position:absolute; top:50%; width:calc(var(--kh) * .78); height:var(--kh); transform:translateY(-50%);
+    border-radius:42% / 50%;
+    background:
+      radial-gradient(circle at 34% 28%, rgba(255,255,255,.75), rgba(255,255,255,0) 28%),
+      radial-gradient(circle at 50% 55%, var(--knob) 30%, color-mix(in oklab, var(--knob) 35%, black) 100%);
+    box-shadow:inset -4px -6px 10px rgba(0,0,0,.5), 0 8px 16px -6px rgba(0,0,0,.9)}
+  .knob.l{left:calc(var(--kh) * -.78 - 12px)} .knob.r{right:calc(var(--kh) * -.78 - 12px)}
+
+  .sheet{position:absolute; left:6px; right:6px; top:var(--rt); height:calc(var(--o) * var(--hs));
+    overflow:hidden; z-index:2; visibility:hidden}
+  .sheet::before,.sheet::after{content:''; position:absolute; left:0; right:0; height:26px; z-index:5; pointer-events:none}
+  .sheet::before{top:0; background:linear-gradient(to bottom, rgba(0,0,0,.55), transparent)}
+  .sheet::after{bottom:0; background:linear-gradient(to top, rgba(0,0,0,.55), transparent)}
+  .content{position:absolute; left:0; right:0; top:50%; height:var(--hs); transform:translateY(-50%);
+    padding:22px 20px; background:var(--pattern), var(--silk)}
+  .paper{position:relative; height:100%; overflow:hidden; color:var(--text);
+    background:
+      radial-gradient(ellipse at 50% 50%, transparent 52%, var(--burn) 100%),
+      var(--fiber),
+      var(--paper);
+    background-blend-mode:normal, overlay, normal;
+    box-shadow:0 0 0 1px rgba(0,0,0,.35), inset 0 0 40px rgba(0,0,0,.25)}
+
+  /* the dragon gets the paper to itself first, then steps back behind the words */
+  .dragon{position:absolute; inset:0; width:100%; height:100%; z-index:0; opacity:0; transition:opacity .35s}
+  .scroll.inked .dragon{animation:dragon 4.6s ease forwards}
+  @keyframes dragon{0%{opacity:var(--dragonHero)} 52%{opacity:var(--dragonHero)} 100%{opacity:var(--dragonA)}}
+  /* a lit dragon glows — but only once the brush has stopped, so nothing is re-filtered per frame */
+  .scroll.glowing.painted .dragon{filter:drop-shadow(0 0 6px var(--ink))}
+  .dragon .clouds{opacity:0; transition:opacity 1.6s ease .6s}
+  .scroll.inked .dragon .clouds{opacity:.75}
+
+  .grid{position:relative; z-index:1; height:100%; display:grid; grid-template-columns:1fr 1.05fr;
+    gap:clamp(20px,3vw,40px); align-items:center; padding:clamp(20px,3vw,38px) clamp(22px,3.4vw,44px)}
+  .lore{position:relative}
+  .lore::before{content:''; position:absolute; inset:-30px -40px; z-index:-1;
+    background:radial-gradient(closest-side, var(--paper) 40%, transparent);
+    opacity:0; transition:opacity .4s ease}
+  .scroll.inked .lore::before{opacity:1; transition:opacity 1.2s ease 2.1s}
+  .glyph{font-family:'Ma Shan Zheng',serif; font-size:64px; line-height:1; color:var(--ink)}
+  .name{font-family:'Cinzel',serif; font-weight:600; font-size:clamp(30px,3.6vw,46px); letter-spacing:.05em;
+    line-height:1.05; margin-top:6px; position:relative; display:inline-block}
+  .stamp{position:absolute; right:-62px; top:-6px; width:48px; height:48px; display:grid; place-items:center;
+    background:#b3261e; color:#f6e3d0; font-family:'Ma Shan Zheng',serif; font-size:30px; border-radius:4px;
+    box-shadow:inset 0 0 0 3px #b3261e, inset 0 0 0 4px rgba(246,227,208,.7); opacity:0}
+  .rule{width:64px; height:1px; background:var(--ink); opacity:.6; margin:16px 0 14px}
+  .blurb{font-style:italic; font-size:clamp(17px,1.6vw,21px); line-height:1.35; max-width:30ch}
+  .meta{display:grid; grid-template-columns:auto auto; gap:12px 28px; margin-top:20px; width:max-content}
+  .meta dt{font-family:'JetBrains Mono',monospace; font-size:9.5px; letter-spacing:.16em; text-transform:uppercase; color:var(--muted)}
+  .meta dd{font-size:17px; font-weight:600; margin-top:2px}
+  .enter{display:inline-flex; align-items:center; gap:10px; margin-top:24px; color:var(--text); text-decoration:none;
+    font-family:'JetBrains Mono',monospace; font-size:10.5px; letter-spacing:.16em; text-transform:uppercase;
+    border-bottom:1px solid currentColor; padding-bottom:4px}
+  .enter:hover{color:var(--ink)}
+  .plate{position:relative; padding:10px; background:color-mix(in oklab, var(--paper) 80%, white 20%);
+    box-shadow:0 0 0 1px rgba(0,0,0,.3), 0 18px 40px -16px rgba(0,0,0,.7); transform:rotate(.6deg)}
+  .dark .plate{background:color-mix(in oklab, var(--paper) 70%, #000)}
+  .plate img{display:block; width:100%; aspect-ratio:4/3; object-fit:cover; filter:sepia(.18) saturate(.92)}
+  .plate.contain img{object-fit:contain; background:#0A0536; padding:12%; filter:none}
+  .plate figcaption{font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--muted); margin-top:9px; display:flex; justify-content:space-between; gap:10px}
+  .wax{position:absolute; right:-14px; bottom:-14px; width:62px; height:62px; border-radius:50%;
+    display:grid; place-items:center; font-family:'Cinzel',serif; font-weight:700; font-size:12px; letter-spacing:.1em;
+    color:#f3d9b0; background:radial-gradient(circle at 38% 32%, #e0655a, #8f1d16 62%, #5b0f0b);
+    box-shadow:0 6px 14px rgba(0,0,0,.6), inset 0 0 0 5px rgba(0,0,0,.12)}
+
+  /* ink settles in: faint, then sharp */
+  .reveal{opacity:0; transform:translateY(6px); transition:opacity .5s ease, transform .5s ease}
+  .scroll.inked .reveal{opacity:1; transform:none;
+    transition:opacity 1s ease calc(var(--i) * 130ms + 2100ms), transform 1s cubic-bezier(.16,1,.3,1) calc(var(--i) * 130ms + 2100ms)}
+  .scroll.inked .stamp{animation:stamp .5s cubic-bezier(.3,1.6,.5,1) 3.3s both}
+  @keyframes stamp{0%{opacity:0; transform:scale(2.3) rotate(-18deg)} 100%{opacity:1; transform:scale(1) rotate(-5deg)}}
+
+  /* ───── the tie: cord, title slip, tassel ───── */
+  .tie{position:absolute; inset:0; z-index:4; pointer-events:none}
+  .slip{position:absolute; left:8%; top:50%; transform:translateY(-50%); display:flex; align-items:center; gap:14px;
+    padding:9px 20px 8px; background:var(--paper); color:var(--text);
+    box-shadow:0 0 0 1px rgba(0,0,0,.35), 0 4px 10px rgba(0,0,0,.5);
+    transition:opacity .4s ease, transform .5s ease}
+  .slip .c{font-family:'Ma Shan Zheng',serif; font-size:24px; color:var(--ink); line-height:1}
+  .slip .t{font-family:'Cinzel',serif; font-weight:600; font-size:15px; letter-spacing:.22em; text-transform:uppercase; white-space:nowrap}
+  .cord{position:absolute; top:-5px; bottom:-5px; width:8px; border-radius:3px;
+    background:repeating-linear-gradient(155deg, var(--cord) 0 3px, color-mix(in oklab, var(--cord) 55%, black) 3px 5px);
+    box-shadow:0 2px 4px rgba(0,0,0,.6); transform-origin:50% 100%;
+    transition:transform .45s cubic-bezier(.6,0,.8,.4), opacity .45s}
+  .cord.a{left:73%} .cord.b{left:calc(73% + 12px)}
+  .tassel{position:absolute; left:calc(73% + 2px); top:calc(100% + 2px); width:16px; transform-origin:50% 0;
+    animation:sway 4.2s ease-in-out infinite; transition:transform .7s cubic-bezier(.5,0,.9,.5), opacity .6s}
+  .tassel i{display:block; margin:0 auto}
+  .tassel .s{width:2px; height:30px; background:var(--cord)}
+  .tassel .b{width:16px; height:16px; border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, rgba(255,255,255,.8), transparent 30%), radial-gradient(var(--knob) 30%, color-mix(in oklab, var(--knob) 40%, black))}
+  .tassel .f{width:14px; height:44px; margin-top:-2px;
+    background:repeating-linear-gradient(to right, var(--cord) 0 1px, color-mix(in oklab, var(--cord) 60%, black) 1px 2px);
+    -webkit-mask-image:linear-gradient(to bottom, #000 70%, transparent); mask-image:linear-gradient(to bottom, #000 70%, transparent);
+    border-radius:3px 3px 0 0}
+  @keyframes sway{0%,100%{rotate:-4deg} 50%{rotate:4deg}}
+  .scroll.untie .cord{transform:scaleY(0); opacity:0}
+  .scroll.untie .slip{opacity:0; transform:translateY(-70%)}
+  .scroll.untie .tassel{transform:translateY(160px) rotate(28deg); opacity:0}
+  .scroll.focus:not(.active):hover .roll{filter:brightness(1.12)}
+
+  @media (max-width:1180px){ .side{display:none} }
+  @media (max-width:760px){
+    :root{--sw:72vw; --hs:74vh; --stoolW:86vw; --stoolTop:60vh}
+    .grid{grid-template-columns:minmax(0,1fr); align-content:start; overflow:auto; gap:18px}
+    .meta{width:auto; gap:10px 18px}
+    .blurb{max-width:none}
+    .plate{max-width:78%}
+    .glyph{font-size:48px}
+    .stamp{top:-60px; right:auto; left:calc(100% - 40px); width:40px; height:40px; font-size:24px}
+    .slip .t{font-size:12px; letter-spacing:.14em}
+    .scroll{--kh:40px}
+    .lantern{width:56px} .lantern.l{left:calc(8% - 28px)} .lantern.r{left:calc(92% - 28px)}
+    .lantern .str{height:9vh} .lantern .body{width:56px; height:68px} .lantern .body b{font-size:22px} .lantern .cap{width:30px}
+    .title{top:15vh}
+    .chrome .row:first-child .dim, .chrome .row:last-child > div:last-child{display:none}
+      .pager{bottom:60px}
+  }
+  @media (prefers-reduced-motion:reduce){
+    .mistband,.tassel,.lantern,.glow{animation:none}
+  }
+</style>
+</head>
+<body>
+
+<div class="silk"></div>
+<svg class="land" id="land" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMax slice" aria-hidden="true"></svg>
+<div class="mistband"></div>
+<div class="floor"></div>
+<div class="glow"></div>
+<div class="lantern l"><i class="str"></i><i class="cap"></i><i class="body"><b>福</b></i><i class="cap"></i><i class="tas"></i></div>
+<div class="lantern r"><i class="str"></i><i class="cap"></i><i class="body"><b>壽</b></i><i class="cap"></i><i class="tas"></i></div>
+
+<div class="stool" id="stool">
+  <svg viewBox="0 0 900 306" aria-hidden="true">
+    <defs>
+      <linearGradient id="wTop" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#8a5030"/><stop offset=".25" stop-color="#5c301b"/><stop offset="1" stop-color="#2a140a"/>
+      </linearGradient>
+      <linearGradient id="wApron" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#3e1f11"/><stop offset="1" stop-color="#22100a"/>
+      </linearGradient>
+      <linearGradient id="wLeg" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0" stop-color="#1e0e07"/><stop offset=".45" stop-color="#5a2f1b"/><stop offset="1" stop-color="#1e0e07"/>
+      </linearGradient>
+      <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#f2d98f"/><stop offset=".5" stop-color="#b8893d"/><stop offset="1" stop-color="#7a5622"/>
+      </linearGradient>
+    </defs>
+    <!-- legs, with horse-hoof feet turning in -->
+    <g fill="url(#wLeg)">
+      <path d="M104,58 L140,58 L146,262 C146,274 152,282 164,288 L162,298 L116,298 C112,288 112,280 110,270 Z"/>
+      <path d="M796,58 L760,58 L754,262 C754,274 748,282 736,288 L738,298 L784,298 C788,288 788,280 790,270 Z"/>
+    </g>
+    <!-- stretcher, with a carved cloud at its middle -->
+    <path d="M144,232 L756,232 L756,246 L520,246 C500,246 478,256 450,262 C422,256 400,246 380,246 L144,246 Z" fill="url(#wApron)"/>
+    <path d="M150,239 L750,239" stroke="url(#gold)" stroke-width="1.2" opacity=".55"/>
+    <!-- spandrels where leg meets apron -->
+    <g fill="url(#wApron)">
+      <path d="M140,94 L196,94 C176,100 162,114 156,134 C150,118 146,104 140,100 Z"/>
+      <path d="M760,94 L704,94 C724,100 738,114 744,134 C750,118 754,104 760,100 Z"/>
+    </g>
+    <!-- apron with a dropped cloud medallion -->
+    <path d="M96,58 L804,58 L804,94 C780,94 768,100 756,110 C744,100 730,96 700,96 L520,96 C498,96 478,108 450,118 C422,108 402,96 380,96 L200,96 C170,96 156,100 144,110 C132,100 120,94 96,94 Z" fill="url(#wApron)"/>
+    <path d="M104,68 L796,68" stroke="url(#gold)" stroke-width="1.4" opacity=".7"/>
+    <circle cx="450" cy="88" r="13" fill="none" stroke="url(#gold)" stroke-width="1.6" opacity=".85"/>
+    <path d="M443,90 c0,-7 10,-8 11,-1 c1,5 -6,6 -6,2" fill="none" stroke="url(#gold)" stroke-width="1.4" opacity=".85"/>
+    <!-- the top board, its ends turned up -->
+    <path d="M60,30 L840,30 C856,30 866,22 872,10 C880,16 884,30 876,44 C872,52 862,58 850,58 L50,58 C38,58 28,52 24,44 C16,30 20,16 28,10 C34,22 44,30 60,30 Z" fill="url(#wTop)"/>
+    <path d="M62,31 L838,31" stroke="rgba(255,220,180,.32)" stroke-width="1"/>
+    <path d="M40,50 L860,50" stroke="rgba(0,0,0,.45)" stroke-width="1.2"/>
+    <g fill="none" stroke="rgba(0,0,0,.22)" stroke-width="1">
+      <path d="M90,38 C260,35 420,41 600,37 C700,35 780,39 830,37"/>
+      <path d="M120,44 C300,42 460,46 640,43 C720,42 790,45 820,44"/>
+    </g>
+    <!-- two cradles the rolls rest in -->
+    <g fill="url(#wTop)">
+      <path d="M200,31 L262,31 L262,20 C252,26 241,28 231,28 C221,28 210,26 200,20 Z"/>
+      <path d="M638,31 L700,31 L700,20 C690,26 679,28 669,28 C659,28 648,26 638,20 Z"/>
+    </g>
+  </svg>
+</div>
+
+<div class="words">
+  <div class="title"><div class="big" id="bigTop"></div><div class="sub" id="bigBot"></div></div>
+  <div class="side l" id="sideL"></div>
+  <div class="side r" id="sideR"></div>
+</div>
+
+<div class="stage" id="stage"></div>
+
+<nav class="pager" id="pager" aria-label="Scrolls"></nav>
+
+<div class="chrome">
+  <div class="row">
+    <div>
+      <div class="mono" style="margin-bottom:7px">Viresh D — The archive</div>
+      <div class="mono dim">Five scrolls / one on the stand at a time</div>
+    </div>
+    <div style="display:flex; align-items:center; gap:18px">
+      <button class="close mono" id="close">Roll up ✕</button>
+      <div class="counter" id="counter">I<small>/ V</small></div>
+    </div>
+  </div>
+  <div class="row" style="align-items:flex-end">
+    <div class="mono dim" id="hint">Click the scroll to unroll it</div>
+    <div class="mono dim">Scroll · ↑↓ to change · Esc to roll up</div>
+  </div>
+</div>
+
+<script>
+const SCROLLS = [
+  { name:'LeaseHub', glyph:'屋', meaning:'Scroll of the House', year:'2026', industry:'Real Estate', client:'LeaseHub', tag:'Freelance',
+    blurb:'Designed a story led data experience.', img:'images/leasehub.jpg',
+    accent:'#9b84ff', silk:'#2a2150', brocade:'#c9a55a', knob:'#6fae8f', cord:'#b3261e',
+    paper:'#eadfc6', ink:'#2b1f4d', text:'#241a33', muted:'#6b5d73', pattern:'fret', seed:11, flip:false },
+  { name:'Youhonk', glyph:'車', meaning:'Scroll of the Carriage', year:'2026', industry:'Automobile', client:'Youhonk · Yellowslice', tag:'B2B App',
+    blurb:'A platform for workshop owners to manage customer orders and vehicle services.', img:'images/youhonk.jpg',
+    accent:'#FF9A1F', silk:'#5a2f0e', brocade:'#e3ac52', knob:'#a8743a', cord:'#1f3a5c',
+    paper:'#efe1c0', ink:'#a63a17', text:'#2b1a0d', muted:'#7a6045', pattern:'cloud', seed:29, flip:true },
+  { name:'BSE Star MF', glyph:'市', meaning:'Scroll of the Market', year:'2025', industry:'Fintech', client:'Bombay Stock Exchange', tag:'Platform',
+    blurb:'Simplified complex financial journeys for mutual fund distributors.', img:'images/bse.jpg',
+    accent:'#4fd2ff', silk:'#0f3442', brocade:'#b8c6ca', knob:'#dfe3da', cord:'#b3261e',
+    paper:'#e3e6d6', ink:'#14272e', text:'#13232a', muted:'#5b6b6e', pattern:'lattice', seed:47, flip:false },
+  { name:'Nuvama', glyph:'富', meaning:'Scroll of Fortune', year:'2025', industry:'Fintech', client:'Nuvama Wealth', tag:'Consumer',
+    blurb:'An industry-first feature: apply for an IPO as a family.', img:'images/nuvama.png', fit:'contain', nda:true,
+    accent:'#FF5A4A', silk:'#4e100c', brocade:'#d4a84a', knob:'#d6aa4c', cord:'#d4a84a',
+    paper:'#34100d', ink:'#d9b45c', text:'#f1dfc0', muted:'#b9967a', pattern:'fret', seed:83, flip:true, dark:true },
+  { name:'GoDark', glyph:'暗', meaning:'Scroll of Shadow', year:'2024', industry:'Crypto Exchange', client:'Goquant', tag:'Consumer',
+    blurb:'Designed the GoDark DEX for crypto traders.', img:'images/goquant.jpg',
+    accent:'#3DE68A', silk:'#0a0e0b', brocade:'#2f6b47', knob:'#26302a', cord:'#3DE68A',
+    paper:'#0d120f', ink:'#3DE68A', text:'#d9efe2', muted:'#7ea08c', pattern:'cloud', seed:131, flip:false, dark:true, glow:true },
+];
+const N = SCROLLS.length;
+const ROMAN = ['I','II','III','IV','V'];
+const reduced = matchMedia('(prefers-reduced-motion:reduce)').matches;
+const clamp = (v,a,b) => v < a ? a : v > b ? b : v;
+const wrap = i => ((i % N) + N) % N;
+function rng(seed){ let s = seed % 2147483647; return () => (s = s * 16807 % 2147483647) / 2147483647; }
+
+// ───── the landscape: misty ridges, a low red sun, a few birds — drawn once ─────
+(function paintLand(){
+  const r = rng(7), W = 1600;
+  const ridges = [
+    { base:470, amp:150, f1:.0042, f2:.013, col:'#3a2c1f', a:.55 },
+    { base:560, amp:120, f1:.0055, f2:.017, col:'#2c2117', a:.7 },
+    { base:640, amp:90,  f1:.0071, f2:.021, col:'#21180f', a:.85 },
+  ];
+  let svg = `<defs>
+    <radialGradient id="sun"><stop offset="0" stop-color="#b8432a" stop-opacity=".62"/><stop offset=".8" stop-color="#a33a24" stop-opacity=".5"/><stop offset="1" stop-color="#a33a24" stop-opacity="0"/></radialGradient>`;
+  ridges.forEach((g, k) => {
+    svg += `<linearGradient id="rg${k}" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="${g.col}" stop-opacity="${g.a}"/><stop offset=".55" stop-color="${g.col}" stop-opacity="${g.a * .55}"/>
+      <stop offset="1" stop-color="${g.col}" stop-opacity="0"/></linearGradient>`;
+  });
+  svg += `</defs><circle cx="1150" cy="300" r="96" fill="url(#sun)"/>`;
+  ridges.forEach((g, k) => {
+    const p1 = r() * 6, p2 = r() * 6;
+    let d = `M0,900 `;
+    for (let x = 0; x <= W; x += 16){
+      const y = g.base - g.amp * (Math.pow(Math.abs(Math.sin(x * g.f1 + p1)), 1.6) * .72 + (Math.sin(x * g.f2 + p2) * .5 + .5) * .28);
+      d += `L${x},${y.toFixed(1)} `;
+    }
+    svg += `<path d="${d}L${W},900 Z" fill="url(#rg${k})"/>`;
+  });
+  // birds crossing the sun
+  [[1040,250,1],[1078,232,.8],[1110,262,.7],[1200,214,.9],[990,280,.6]].forEach(([x,y,s]) => {
+    svg += `<path d="M${x},${y} q${6*s},${-6*s} ${12*s},0 q${6*s},${-6*s} ${12*s},0" fill="none" stroke="#120c08" stroke-width="${1.8*s}" stroke-linecap="round"/>`;
+  });
+  document.getElementById('land').innerHTML = svg;
+})();
+
+// ───── brocade patterns, drawn in each scroll's own thread colour ─────
+function pattern(kind, c){
+  const svg = {
+    fret:   `<svg xmlns='http://www.w3.org/2000/svg' width='40' height='40'><path d='M5 5h30v30H11V15h18v14h-10v-6' fill='none' stroke='${c}' stroke-width='1.6' opacity='.55'/></svg>`,
+    cloud:  `<svg xmlns='http://www.w3.org/2000/svg' width='48' height='32'><path d='M4 22c0-6 8-8 11-3 1-7 12-8 14-1 4-4 11-1 9 5H6c-2 0-2-1-2-1z' fill='none' stroke='${c}' stroke-width='1.3' opacity='.55'/><circle cx='38' cy='8' r='2' fill='${c}' opacity='.5'/></svg>`,
+    lattice:`<svg xmlns='http://www.w3.org/2000/svg' width='28' height='28'><path d='M14 1L27 14L14 27L1 14Z' fill='none' stroke='${c}' stroke-width='1.2' opacity='.5'/><circle cx='14' cy='14' r='2' fill='${c}' opacity='.5'/></svg>`,
+  }[kind];
+  return `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
+}
+
+// ───── a dragon, painted procedurally so each scroll gets its own ─────
+// No SVG filters: the brush roughness is baked into the outline instead, so the
+// paint-in animation only ever repaints plain paths.
+function dragonSVG(id, sc){
+  const W = 1000, H = 560, W0 = 30, NP = 180;
+  const r = rng(sc.seed);
+  const A1 = .17 + r()*.07, f1 = 1.05 + r()*.45, p1 = r(), A2 = .05 + r()*.04, f2 = 2.6 + r()*1.1, p2 = r();
+
+  const P = [];
+  for (let i = 0; i <= NP; i++){
+    const t = i / NP;
+    let x = W * (.25 + .62 * t);
+    const y = H * (.5 + A1 * Math.sin(2*Math.PI*(f1*t + p1)) + A2 * Math.sin(2*Math.PI*(f2*t + p2)));
+    if (sc.flip) x = W - x;
+    P.push([x, y]);
+  }
+  const T = P.map((p, i) => {
+    const a = P[Math.max(0, i-1)], b = P[Math.min(NP, i+1)];
+    const dx = b[0]-a[0], dy = b[1]-a[1], l = Math.hypot(dx, dy) || 1;
+    return [dx/l, dy/l];
+  });
+  const Nn = T.map(([x, y]) => [-y, x]);
+  const sgn = Math.sign(Nn.reduce((a, n) => a + n[1], 0)) || 1;
+  const D = Nn.map(([x, y]) => [x * sgn, y * sgn]);      // towards the belly
+  const U = D.map(([x, y]) => [-x, -y]);                 // towards the spine
+  const wid = t => W0 * (.62 + .38 * Math.sin(Math.PI * Math.min(1, t * 1.25 + .1))) * Math.pow(1 - t, .55);
+  const add = (p, v, k) => [p[0] + v[0]*k, p[1] + v[1]*k];
+  const f = v => v[0].toFixed(1) + ',' + v[1].toFixed(1);
+  const jit = () => (r() - .5) * 2.6;                    // a dry brush never leaves a clean edge
+
+  const L = [], R = [];
+  P.forEach((p, i) => { const w = wid(i / NP); L.push(add(p, Nn[i], w + jit())); R.push(add(p, Nn[i], -w + jit())); });
+  const body = 'M' + L.map(f).join('L') + 'L' + R.reverse().map(f).join('L') + 'Z';
+
+  const BL = [], BR = [];
+  P.forEach((p, i) => { const w = wid(i / NP); BL.push(add(p, D[i], w * .15)); BR.push(add(p, D[i], w * .82)); });
+  const belly = 'M' + BL.map(f).join('L') + 'L' + BR.slice().reverse().map(f).join('L') + 'Z';
+  let plates = '';
+  for (let i = 6; i < NP - 8; i += 3){
+    const w = wid(i / NP);
+    plates += `M${f(add(P[i], D[i], w*.15))}L${f(add(P[i], D[i], w*.82))}`;
+  }
+
+  let scales = '';
+  for (let row = 0; row < 2; row++){
+    for (let i = 8 + row*2; i < NP - 12; i += 4){
+      const t = i / NP, w = wid(t), rr = w * .3;
+      const c = add(P[i], U[i], w * (row ? .12 : .55));
+      const a = add(c, U[i], rr), b = add(c, U[i], -rr);
+      scales += `M${f(a)}A${rr.toFixed(1)},${rr.toFixed(1)} 0 0 ${sc.flip ? 0 : 1} ${f(b)}`;
+    }
+  }
+
+  let fins = '';
+  for (let i = 9; i < NP * .93; i += 4){
+    const t = i / NP, w = wid(t), sl = W0 * .62 * (1 - t * .6);
+    const base = add(P[i], U[i], w * .85);
+    const tip = add(add(P[i], U[i], w + sl), T[i], -sl * .9);
+    fins += `M${f(add(base, T[i], -w*.38))}L${f(tip)}L${f(add(base, T[i], w*.38))}Z`;
+  }
+
+  let legs = '', claws = '';
+  [.15, .3, .57, .71].forEach((t, k) => {
+    const i = Math.round(t * NP), w = wid(t), back = k > 1 ? -1 : 1;
+    const fw = [T[i][0] * back, T[i][1] * back];
+    const hip = add(P[i], D[i], w * .55);
+    const knee = add(add(hip, D[i], W0 * 1.1), fw, -W0 * .75);
+    const foot = add(add(knee, D[i], W0 * .45), fw, W0 * .95);
+    legs += `M${f(hip)}Q${f(knee)} ${f(foot)}`;
+    [.15, .65, 1.15].forEach(a => {
+      const dir = [fw[0] * Math.cos(a) + D[i][0] * Math.sin(a), fw[1] * Math.cos(a) + D[i][1] * Math.sin(a)];
+      const tip = add(foot, dir, W0 * .55);
+      const mid = add(add(foot, dir, W0 * .3), U[i], W0 * .1);
+      claws += `M${f(foot)}Q${f(mid)} ${f(tip)}`;
+    });
+  });
+
+  const tE = P[NP], tT = T[NP], tN = Nn[NP];
+  let tail = '';
+  [-1, 0, 1].forEach(s => {
+    const tip = add(add(tE, tT, W0 * (1.9 - Math.abs(s) * .5)), tN, s * W0 * .9);
+    tail += `M${f(add(tE, tN, W0*.25))}Q${f(add(add(tE, tT, W0*.8), tN, s*W0*.2))} ${f(tip)}Q${f(add(tE, tT, W0*.6))} ${f(add(tE, tN, -W0*.25))}Z`;
+  });
+
+  const dir = [-T[0][0], -T[0][1]];
+  const ang = Math.atan2(dir[1], dir[0]) * 180 / Math.PI;
+  const up = dir[0] < 0 ? ' scale(1,-1)' : '';
+  const u = W0 * 1.35;
+  const head = `<g transform="translate(${f(P[0])}) rotate(${ang.toFixed(1)})${up} scale(${u})">
+      <path d="M-0.5,-0.85 L-1.7,-0.45 L-0.75,-0.2 L-2.0,0.3 L-0.65,0.32 L-1.6,0.95 L-0.3,0.72 Z" fill="var(--dk)"/>
+      <path d="M-0.4,-0.9 C0.6,-1.4 2.0,-1.3 2.9,-0.7 C3.3,-0.5 3.6,-0.25 3.5,0.05 C2.8,0.15 2.1,0.25 1.5,0.55 C0.9,0.95 0.1,1.0 -0.5,0.7 Z" fill="var(--dk)"/>
+      <path d="M0.3,0.78 C1.2,0.88 2.2,1.08 3.1,1.58 C2.2,1.58 1.2,1.48 0.2,1.18 Z" fill="var(--dk)"/>
+      <path d="M2.35,0.22 l0.1,0.26 l0.12,-0.24 M2.75,0.14 l0.08,0.22 l0.1,-0.2" fill="none" stroke="var(--pp)" stroke-width="0.06"/>
+      <path d="M3.1,-0.52 c0.3,-0.42 0.72,-0.2 0.5,0.16" fill="none" stroke="var(--pp)" stroke-width="0.07"/>
+      <circle cx="1.55" cy="-0.55" r="0.27" fill="var(--pp)"/><circle cx="1.6" cy="-0.55" r="0.13" fill="var(--dk)"/>
+      <path d="M1.1,-0.88 C1.5,-1.18 2.0,-1.12 2.3,-0.88" fill="none" stroke="var(--pp)" stroke-width="0.08"/>
+      <g fill="none" stroke="var(--dk)" stroke-linecap="round">
+        <path d="M0.7,-1.0 C0.0,-1.9 -1.0,-2.3 -2.2,-2.2" stroke-width="0.22"/>
+        <path d="M0.3,-0.9 C-0.4,-1.5 -1.2,-1.7 -1.9,-1.5" stroke-width="0.15"/>
+        <path d="M-0.9,-2.07 l-0.22,-0.48 M-1.5,-2.2 l-0.1,-0.42" stroke-width="0.11"/>
+        <path d="M3.3,-0.25 C3.0,-1.6 1.6,-2.6 -0.6,-2.9 C-1.6,-3.0 -2.4,-2.7 -2.8,-2.3" stroke-width="0.07"/>
+        <path d="M3.2,0.3 C3.9,1.4 3.1,2.6 1.2,3.0 C0.0,3.2 -1.0,3.0 -1.6,2.6" stroke-width="0.07"/>
+      </g>
+    </g>`;
+
+  const pc = add(add(P[0], dir, u * 4.1), U[0], u * .9);
+  const pr = u * .85;
+  const pearl = `<g fill="none" stroke="var(--dk)" stroke-linecap="round">
+      <circle cx="${pc[0].toFixed(1)}" cy="${pc[1].toFixed(1)}" r="${pr.toFixed(1)}" stroke-width="3"/>
+      <path d="M${pc[0]},${pc[1]} m-${pr*.45},0 a${pr*.45},${pr*.45} 0 1 1 ${pr*.45},${pr*.45} a${pr*.25},${pr*.25} 0 1 1 -${pr*.2},-${pr*.3}" stroke-width="2"/>
+      ${[0,1,2,3,4].map(k => { const a = k/5*Math.PI*2; const x1 = pc[0]+Math.cos(a)*pr*1.25, y1 = pc[1]+Math.sin(a)*pr*1.25;
+        const x2 = pc[0]+Math.cos(a+.5)*pr*1.9, y2 = pc[1]+Math.sin(a+.5)*pr*1.9;
+        return `<path d="M${x1.toFixed(1)},${y1.toFixed(1)} Q${(pc[0]+Math.cos(a+.15)*pr*1.7).toFixed(1)},${(pc[1]+Math.sin(a+.15)*pr*1.7).toFixed(1)} ${x2.toFixed(1)},${y2.toFixed(1)}" stroke-width="2"/>`; }).join('')}
+    </g>`;
+
+  let clouds = '';
+  [[.1,.18],[.86,.16],[.14,.84],[.8,.86],[.5,.1],[.52,.92]].forEach(([cx, cy], k) => {
+    const s = 1.2 + r() * 1.3, x = W * cx + (r()-.5)*60, y = H * cy + (r()-.5)*30;
+    clouds += `<g transform="translate(${x.toFixed(0)},${y.toFixed(0)}) scale(${(k%2 ? -s : s).toFixed(2)},${s.toFixed(2)})">
+      <path d="M0,0 C-12,-2 -14,-18 0,-20 C4,-32 24,-32 28,-20 C40,-24 48,-10 38,-2 C44,6 34,14 26,8 L0,8 C-6,8 -6,0 0,0 Z"/>
+      <path d="M14,-14 c-6,0 -6,8 0,8 c4,0 4,-5 0,-5 M30,-12 c-4,0 -4,6 0,6"/></g>`;
+  });
+
+  // the brush that paints it in: a fat stroke along the spine, head first
+  const lead = add(P[0], dir, u * 7.5);
+  const maskPts = [lead, ...P];
+  let len = 0;
+  for (let i = 1; i < maskPts.length; i++) len += Math.hypot(maskPts[i][0]-maskPts[i-1][0], maskPts[i][1]-maskPts[i-1][1]);
+  const maskD = 'M' + maskPts.map(f).join('L');
+
+  return { len, svg: `
+  <svg class="dragon" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid slice" aria-hidden="true"
+       style="--dk:${sc.ink}; --pp:${sc.paper}">
+    <defs>
+      <mask id="brush${id}" maskUnits="userSpaceOnUse" x="0" y="0" width="${W}" height="${H}">
+        <path class="brush" d="${maskD}" fill="none" stroke="#fff" stroke-width="${W0 * 9}" stroke-linecap="round" stroke-linejoin="round"
+              style="stroke-dasharray:${len.toFixed(0)}; stroke-dashoffset:${len.toFixed(0)}"/>
+      </mask>
+    </defs>
+    <g class="clouds" fill="none" stroke="var(--dk)" stroke-width="1.6">${clouds}</g>
+    <g mask="url(#brush${id})">
+      <g fill="none" stroke="var(--dk)" stroke-linecap="round" stroke-linejoin="round">
+        <path d="${legs}" stroke-width="${W0*.36}"/>
+        <path d="${claws}" stroke-width="${W0*.11}"/>
+      </g>
+      <path d="${fins}" fill="var(--dk)"/>
+      <path d="${tail}" fill="var(--dk)"/>
+      <path d="${body}" fill="var(--dk)"/>
+      <path d="${belly}" fill="var(--pp)" opacity=".42"/>
+      <path d="${plates}" stroke="var(--dk)" stroke-width="1.6" opacity=".7"/>
+      <path d="${scales}" fill="none" stroke="var(--pp)" stroke-width="1.5" opacity=".55"/>
+      ${head}
+      ${pearl}
+    </g>
+  </svg>` };
+}
+
+// ───── build the scrolls ─────
+const stage = document.getElementById('stage');
+const pager = document.getElementById('pager');
+const items = SCROLLS.map((sc, i) => {
+  const el = document.createElement('div');
+  el.className = 'scroll' + (sc.dark ? ' dark' : '') + (sc.glow ? ' glowing' : '');
+  el.setAttribute('role', 'button');
+  el.setAttribute('aria-label', `${sc.name}, ${sc.industry}, ${sc.year}. ${sc.blurb}`);
+  const st = el.style;
+  st.opacity = 0;                       // nothing shows until the first frame places it
+  st.setProperty('--silk', sc.silk);
+  st.setProperty('--pattern', pattern(sc.pattern, sc.brocade));
+  st.setProperty('--knob', sc.knob);
+  st.setProperty('--cord', sc.cord);
+  st.setProperty('--paper', sc.paper);
+  st.setProperty('--ink', sc.ink);
+  st.setProperty('--text', sc.text);
+  st.setProperty('--muted', sc.muted);
+  st.setProperty('--burn', sc.dark ? 'rgba(0,0,0,.55)' : 'rgba(92,58,22,.32)');
+  st.setProperty('--dragonA', sc.dark ? (sc.glow ? '.5' : '.42') : '.26');
+  st.setProperty('--dragonHero', sc.dark ? '1' : '.9');
+
+  const dragon = dragonSVG(i, sc);
+  const plate = sc.nda
+    ? `<figure class="plate contain reveal" style="--i:5"><img src="${sc.img}" alt="${sc.client} logo"><span class="wax">NDA</span>
+         <figcaption><span>Sealed under NDA</span><span>${sc.year}</span></figcaption></figure>`
+    : `<figure class="plate reveal" style="--i:5"><img src="${sc.img}" alt="${sc.name} screens">
+         <figcaption><span>Plate ${ROMAN[i]}</span><span>${sc.client}</span></figcaption></figure>`;
+
+  el.innerHTML = `
+    <div class="roll top"><i class="knob l"></i><i class="knob r"></i></div>
+    <div class="sheet"><div class="content"><div class="paper">
+      ${dragon.svg}
+      <div class="grid">
+        <div class="lore">
+          <div class="glyph reveal" style="--i:0">${sc.glyph}</div>
+          <h2 class="name reveal" style="--i:1">${sc.name}<span class="stamp">${sc.glyph}</span></h2>
+          <div class="rule reveal" style="--i:2"></div>
+          <p class="blurb reveal" style="--i:2">${sc.blurb}</p>
+          <dl class="meta reveal" style="--i:3">
+            <div><dt>Year</dt><dd>${sc.year}</dd></div>
+            <div><dt>Industry</dt><dd>${sc.industry}</dd></div>
+            <div><dt>Client</dt><dd>${sc.client}</dd></div>
+            <div><dt>Kind</dt><dd>${sc.tag}</dd></div>
+          </dl>
+          <a class="enter reveal" style="--i:4" href="#" onclick="return false">Read the full scroll <span>⟶</span></a>
+        </div>
+        ${plate}
+      </div>
+    </div></div></div>
+    <div class="roll bot"><i class="knob l"></i><i class="knob r"></i></div>
+    <div class="tie">
+      <div class="slip"><span class="c">${sc.glyph}</span><span class="t">${sc.name}</span></div>
+      <span class="cord a"></span><span class="cord b"></span>
+      <div class="tassel"><i class="s"></i><i class="b"></i><i class="f"></i></div>
+    </div>`;
+  stage.appendChild(el);
+
+  const b = document.createElement('button');
+  b.textContent = sc.glyph;
+  b.title = sc.name;
+  b.setAttribute('aria-label', sc.name);
+  b.addEventListener('click', () => go(i));
+  pager.appendChild(b);
+
+  return { el, sc, btn: b, sheet: el.querySelector('.sheet'), brush: el.querySelector('.brush'),
+           len: dragon.len, o: 0, lift: 0 };
+});
+
+// ───── state ─────
+let offset = 0, target = 0, lastFocus = -1;
+let openI = -1, phase = 'closed', anim = null, paintT = 0;
+const easeIO = p => p < .5 ? 4*p*p*p : 1 - Math.pow(-2*p + 2, 3) / 2;
+const easeOut = p => 1 - Math.pow(1 - p, 3);
+// set down on the stand: falls, touches, gives one small hop, settles
+const land = p => p < .78 ? 1 - Math.pow(p / .78, 2.2) : .05 * Math.sin((p - .78) / .22 * Math.PI);
+
+function tween(it, key, from, to, dur, ease, done){
+  anim = { it, key, from, to, t0: performance.now(), dur: reduced ? 1 : dur, ease, done };
+}
+
+function ink(it, on){
+  const b = it.brush;
+  clearTimeout(paintT);
+  if (on){
+    b.style.transition = 'stroke-dashoffset 2.3s cubic-bezier(.45,0,.25,1)';
+    b.style.strokeDashoffset = '0';
+    paintT = setTimeout(() => it.el.classList.add('painted'), 2400);
+  } else {
+    b.style.transition = 'none';
+    b.style.strokeDashoffset = it.len.toFixed(0);
+    it.el.classList.remove('painted');
+  }
+}
+
+function go(i){
+  if (phase !== 'closed') return;
+  let d = i - wrap(Math.round(target));
+  if (d >  N/2) d -= N;
+  if (d < -N/2) d += N;
+  target = Math.round(target) + d;
+}
+
+function openScroll(i){
+  if (phase !== 'closed') return;
+  go(i);
+  openI = i; phase = 'untie';
+  const it = items[i];
+  it.el.classList.add('untie', 'active');
+  document.body.classList.add('reading');
+  hint.textContent = 'Esc, or click outside, to roll it up';
+  // cord off, then it rises from the stand, then the paper lets go both ways
+  setTimeout(() => {
+    phase = 'lifting';
+    tween(it, 'lift', 0, 1, 700, easeOut, () => {
+      phase = 'opening';
+      tween(it, 'o', 0, 1, 1700, easeIO, () => {
+        phase = 'open';
+        it.el.classList.add('inked');
+        ink(it, true);
+      });
+    });
+  }, reduced ? 0 : 450);
+}
+
+function closeScroll(){
+  if (phase !== 'open') return;
+  const it = items[openI];
+  phase = 'closing';
+  it.el.classList.remove('inked');
+  ink(it, false);
+  setTimeout(() => {
+    tween(it, 'o', 1, 0, 1200, easeIO, () => {
+      phase = 'landing';
+      tween(it, 'lift', 1, 0, 750, land, () => {
+        it.lift = 0;
+        phase = 'closed';
+        it.el.classList.remove('active', 'untie');
+        document.body.classList.remove('reading');
+        openI = -1;
+        onFocus(wrap(Math.round(offset)), true);
+      });
+    });
+  }, reduced ? 0 : 300);
+}
+
+// ───── chrome text ─────
+const bigTop = document.getElementById('bigTop'), bigBot = document.getElementById('bigBot');
+const sideL = document.getElementById('sideL'), sideR = document.getElementById('sideR');
+const counter = document.getElementById('counter'), hint = document.getElementById('hint');
+function retext(el, html){ el.classList.remove('in'); void el.offsetWidth; el.innerHTML = html; el.classList.add('in'); }
+
+function onFocus(i, quiet){
+  const sc = SCROLLS[i];
+  document.documentElement.style.setProperty('--accent', sc.accent);
+  if (!quiet){
+    retext(bigTop, sc.name);
+    retext(bigBot, `${sc.meaning}<i>${sc.glyph}</i>${sc.year}`);
+  }
+  sideL.innerHTML = `<b>${sc.glyph}</b>No. ${String(i+1).padStart(2,'0')}<br>${sc.industry}`;
+  sideR.innerHTML = `<b>${sc.year}</b>${sc.client.replace(' · ', '<br>')}<br>${sc.tag}`;
+  counter.innerHTML = `${ROMAN[i]}<small>/ V</small>`;
+  items.forEach((it, k) => it.btn.classList.toggle('on', k === i));
+  if (phase === 'closed')
+    hint.textContent = sc.nda ? 'This one is sealed — click to see what may be shown' : 'Click the scroll to unroll it';
+}
+
+// where a closed scroll sits: its lower roll in the stand's cradles
+const stoolEl = document.getElementById('stool');
+let restY = 0, slide = 900;
+function measure(){
+  const r = stoolEl.getBoundingClientRect();
+  const cradle = r.top + r.height * (24 / 306);
+  restY = cradle - 40 - innerHeight / 2;
+  slide = Math.max(innerWidth * .8, 700);
+}
+
+// ───── frame ─────
+function tick(now){
+  offset += (target - offset) * (reduced ? 1 : .075);
+  if (Math.abs(target - offset) < .0005) offset = target;
+
+  if (anim){
+    const p = clamp((now - anim.t0) / anim.dur, 0, 1);
+    anim.it[anim.key] = anim.from + (anim.to - anim.from) * anim.ease(p);
+    if (p >= 1){ const a = anim; anim = null; a.it[a.key] = a.to; a.done && a.done(); }
+  }
+
+  const focus = wrap(Math.round(offset));
+  if (focus !== lastFocus){ lastFocus = focus; onFocus(focus); }
+
+  items.forEach((it, i) => {
+    let rel = ((i - offset) % N + N) % N; if (rel > N / 2) rel -= N;
+    const a = Math.abs(rel);
+    const o = it.o, lift = it.lift;
+
+    // changing scrolls: the old one is carried off to the side and the next set down
+    const carry = Math.sin(Math.min(a, 1) * Math.PI) * 70;
+    const x = rel * slide;
+    // lifted off the stand, it hangs a little above centre so the open sheet fits
+    const y = restY * (1 - lift) - carry - 6 * lift;
+    const hover = reduced ? 0 : Math.sin(now * .0016 + i) * 4 * lift * (1 - o);
+    const shudder = anim && anim.it === it && anim.key === 'o' ? Math.sin(o * Math.PI * 3) * (1 - o) * 1.6 : 0;
+    const rz = rel * 7 + shudder;
+
+    const st = it.el.style;
+    st.setProperty('--o', o.toFixed(4));
+    st.setProperty('--rt', (40 - 15 * o).toFixed(2) + 'px');
+    st.transform = `translate(-50%,-50%) translate(${x.toFixed(1)}px,${(y + hover).toFixed(1)}px) rotate(${rz.toFixed(2)}deg)`;
+    st.opacity = clamp(1 - a * 1.25, 0, 1).toFixed(3);
+    st.zIndex = Math.round(100 - a * 10);
+    st.pointerEvents = a < .5 ? 'auto' : 'none';
+    it.sheet.style.visibility = o > .001 ? 'visible' : 'hidden';
+    it.el.classList.toggle('focus', i === focus);
+  });
+
+  requestAnimationFrame(tick);
+}
+
+// ───── input ─────
+function step(d){ if (phase === 'closed') target = Math.round(target) + d; }
+
+let wheelAcc = 0, wheelLock = 0;
+addEventListener('wheel', e => {
+  e.preventDefault();
+  if (phase !== 'closed') return;
+  const now = performance.now();
+  wheelAcc += e.deltaY;
+  if (now > wheelLock && Math.abs(wheelAcc) > 40){
+    step(Math.sign(wheelAcc));
+    wheelAcc = 0; wheelLock = now + 700;
+  }
+}, { passive:false });
+
+let touchY = null, touchX = null;
+addEventListener('touchstart', e => { touchY = e.touches[0].clientY; touchX = e.touches[0].clientX; }, { passive:true });
+addEventListener('touchend', e => {
+  if (touchY == null) return;
+  const dy = touchY - e.changedTouches[0].clientY, dx = touchX - e.changedTouches[0].clientX;
+  const d = Math.abs(dx) > Math.abs(dy) ? dx : dy;
+  if (Math.abs(d) > 40) step(Math.sign(d));
+  touchY = touchX = null;
+});
+
+const hintEl = document.getElementById('hint');
+addEventListener('keydown', e => {
+  if (['ArrowDown','ArrowRight','PageDown'].includes(e.key)){ step(1); e.preventDefault(); }
+  if (['ArrowUp','ArrowLeft','PageUp'].includes(e.key)){ step(-1); e.preventDefault(); }
+  if (e.key === 'Enter' || e.key === ' '){ openScroll(wrap(Math.round(target))); e.preventDefault(); }
+  if (e.key === 'Escape') closeScroll();
+});
+
+items.forEach((it, i) => {
+  it.el.addEventListener('click', () => {
+    if (phase !== 'closed') return;
+    if (i === wrap(Math.round(target))) openScroll(i); else go(i);
+  });
+});
+// clicking outside an open scroll rolls it back up
+addEventListener('click', e => {
+  if (phase === 'open' && !e.target.closest('.scroll') && !e.target.closest('.close')) closeScroll();
+});
+document.getElementById('close').addEventListener('click', closeScroll);
+addEventListener('resize', measure);
+
+measure();
+if (document.fonts) document.fonts.ready.then(measure);
+requestAnimationFrame(tick);
+</script>
+</body>
+</html>

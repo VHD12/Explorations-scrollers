@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Scroll viewer — model check</title>
+<style>
+  :root{color-scheme:dark}
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{background:#15110d; color:#eadfc8; font:12px/1.5 'JetBrains Mono',ui-monospace,Menlo,monospace; overflow:hidden}
+  canvas{display:block}
+  .panel{position:fixed; left:16px; top:16px; width:280px; padding:14px; border-radius:8px;
+    background:rgba(20,15,10,.82); border:1px solid rgba(234,223,200,.14); backdrop-filter:blur(6px)}
+  .panel h1{font-size:12px; letter-spacing:.14em; text-transform:uppercase; margin-bottom:10px}
+  .btns{display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px}
+  button{font:inherit; color:inherit; background:#2a2118; border:1px solid rgba(234,223,200,.25);
+    border-radius:5px; padding:6px 10px; cursor:pointer}
+  button:hover{background:#3a2d20}
+  label{display:flex; align-items:center; gap:8px; margin:6px 0}
+  input[type=range]{flex:1}
+  dl{display:grid; grid-template-columns:auto 1fr; gap:2px 10px; margin-top:10px; color:rgba(234,223,200,.75)}
+  dt{color:rgba(234,223,200,.45)}
+  .load{position:fixed; inset:0; display:grid; place-items:center; font-size:13px; letter-spacing:.1em; pointer-events:none}
+</style>
+</head>
+<body>
+<div class="load" id="load">Loading scroll.glb…</div>
+<div class="panel">
+  <h1>Scroll — open / close check</h1>
+  <div class="btns">
+    <button id="open">Open</button>
+    <button id="close">Close</button>
+    <button id="toggle">Toggle</button>
+  </div>
+  <div class="btns">
+    <button id="fClosed">Frame closed</button>
+    <button id="fOpen">Frame open</button>
+  </div>
+  <label>Time <input type="range" id="scrub" min="0" max="1" step="0.001" value="0"></label>
+  <label>Speed <input type="range" id="speed" min="0.25" max="2" step="0.05" value="1"><span id="speedV">1.00×</span></label>
+  <label><input type="checkbox" id="rect"> Show content rect (open)</label>
+  <dl>
+    <dt>state</dt><dd id="state">—</dd>
+    <dt>time</dt><dd id="time">—</dd>
+    <dt>clip</dt><dd id="clip">—</dd>
+    <dt>tris</dt><dd id="tris">—</dd>
+    <dt>bounds y</dt><dd id="bounds">—</dd>
+  </dl>
+</div>
+
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+} }
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+
+const renderer = new THREE.WebGLRenderer({ antialias:true });
+renderer.setPixelRatio(Math.min(2, devicePixelRatio));
+renderer.setSize(innerWidth, innerHeight);
+renderer.toneMapping = THREE.AgXToneMapping;
+document.body.prepend(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color('#15110d');
+const pmrem = new THREE.PMREMGenerator(renderer);
+scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+scene.environmentIntensity = 0.6;
+
+scene.add(new THREE.HemisphereLight('#fff1dc', '#2a1c10', 0.9));
+const key = new THREE.DirectionalLight('#ffe2b8', 2.2); key.position.set(1.5, 2, 3); scene.add(key);
+const rim = new THREE.DirectionalLight('#ff9a50', 1.0); rim.position.set(-2, 0.5, -1.5); scene.add(rim);
+
+const camera = new THREE.PerspectiveCamera(30, innerWidth / innerHeight, 0.01, 50);
+camera.position.set(0, -0.1, 3.2);
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.target.set(0, -0.05, 0.08);
+controls.enableDamping = true;
+
+const $ = id => document.getElementById(id);
+let mixer, action, clip, scroll, bottomRoller;
+const sheets = [];   // 'Parchment' has two materials, so it arrives as a group of two skinned meshes
+
+new GLTFLoader().load('models/scroll.glb', gltf => {
+  scroll = gltf.scene;
+  scene.add(scroll);
+  let tris = 0;
+  scroll.traverse(o => {
+    if (o.isMesh){
+      tris += (o.geometry.index ? o.geometry.index.count : o.geometry.attributes.position.count) / 3;
+      // its bounds come from the flat rest pose, so culling would drop it
+      if (o.isSkinnedMesh) { sheets.push(o); o.frustumCulled = false; }
+    }
+    if (o.name === 'BottomRoller') bottomRoller = o;
+  });
+
+  // the rest pose is the scroll fully open; pin the clip to t=0 before the first render so it shows closed
+  clip = gltf.animations[0];
+  mixer = new THREE.AnimationMixer(scroll);
+  action = mixer.clipAction(clip);
+  action.setLoop(THREE.LoopOnce, 1);
+  action.clampWhenFinished = true;
+  action.play();
+  action.paused = true;
+  action.time = 0;
+  mixer.update(0);
+
+  $('clip').textContent = `${clip.name} · ${clip.duration.toFixed(2)}s · ${clip.tracks.length} tracks`;
+  $('tris').textContent = Math.round(tris).toLocaleString();
+  $('load').remove();
+  window.viewer = { THREE, scene, camera, renderer, scroll, sheets, bottomRoller, mixer, action, clip, measure, frame };
+});
+
+function open(){
+  if (!action) return;
+  if (action.time >= clip.duration) action.time = 0;
+  action.timeScale = +$('speed').value; action.paused = false;
+}
+function close(){
+  if (!action) return;
+  if (action.time <= 0) action.time = clip.duration;
+  action.timeScale = -$('speed').value; action.paused = false;
+}
+$('open').onclick = open;
+$('close').onclick = close;
+$('toggle').onclick = () => (action.time > clip.duration / 2 ? close() : open());
+$('speed').oninput = e => { $('speedV').textContent = (+e.target.value).toFixed(2) + '×';
+  if (action && !action.paused) action.timeScale = Math.sign(action.timeScale) * +e.target.value; };
+$('scrub').oninput = e => { action.paused = true; action.time = +e.target.value * clip.duration; mixer.update(0); };
+
+// the skinned sheet's real bounds, measured from the posed vertices rather than the rest pose
+function measure(){
+  scroll.updateMatrixWorld(true);
+  const b = new THREE.Box3();
+  sheets.forEach(m => { m.computeBoundingBox(); b.union(m.boundingBox.clone().applyMatrix4(m.matrixWorld)); });
+  const r = new THREE.Box3().setFromObject(scroll.getObjectByName('TopRoller'));
+  return { yMin: Math.min(b.min.y, bottomRoller.getWorldPosition(new THREE.Vector3()).y - .07), yMax: Math.max(b.max.y, r.max.y) };
+}
+function frame(which){
+  const fit = which === 'open' ? { y:-1.01, d:6.2 } : { y:-0.02, d:2.6 };
+  controls.target.set(0, fit.y, 0.08);
+  camera.position.set(0, fit.y, fit.d);
+}
+$('fClosed').onclick = () => frame('closed');
+$('fOpen').onclick = () => frame('open');
+
+// the clear area for HTML content, as given in the model notes (valid when fully open)
+const rect = new THREE.LineLoop(
+  new THREE.BufferGeometry().setFromPoints([
+    new THREE.Vector3(-0.365, -0.665, 0.032), new THREE.Vector3(0.365, -0.665, 0.032),
+    new THREE.Vector3(0.365, -2.04, 0.032), new THREE.Vector3(-0.365, -2.04, 0.032)]),
+  new THREE.LineBasicMaterial({ color:'#ff3b2f' }));
+rect.visible = false; scene.add(rect);
+$('rect').onchange = e => rect.visible = e.target.checked;
+
+const clock = new THREE.Clock();
+let measured = 0;
+renderer.setAnimationLoop(() => {
+  const dt = clock.getDelta();
+  if (mixer){
+    mixer.update(dt);
+    const t = action.time;
+    $('time').textContent = `${t.toFixed(2)} / ${clip.duration.toFixed(2)}s`;
+    if (!action.paused) $('scrub').value = t / clip.duration;
+    const st = action.paused || (t <= 0 && action.timeScale < 0) || (t >= clip.duration && action.timeScale > 0)
+      ? (t <= 0.001 ? 'closed' : t >= clip.duration - 0.001 ? 'open' : 'paused')
+      : (action.timeScale > 0 ? 'opening…' : 'closing…');
+    $('state').textContent = st;
+    if (performance.now() - measured > 250){ measured = performance.now(); const m = measure(); $('bounds').textContent = `${m.yMin.toFixed(2)} … ${m.yMax.toFixed(2)}`; }
+  }
+  controls.update();
+  renderer.render(scene, camera);
+});
+
+addEventListener('resize', () => {
+  camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+</script>
+</body>
+</html>

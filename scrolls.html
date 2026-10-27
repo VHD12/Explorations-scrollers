@@ -1,0 +1,1173 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>The Archive — scroll listing study</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500;1,600&family=JetBrains+Mono:wght@400;500&family=Ma+Shan+Zheng&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --accent:#9b84ff;
+    --stoolW:min(720px, 64vw);
+    --stoolTop:62vh;
+    --fiber:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='300'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.012 .9' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='1.2 0 0 0 -.1  1.2 0 0 0 -.1  1.2 0 0 0 -.1  0 0 0 0 .35'/></filter><rect x='-20' y='-20' width='340' height='340' filter='url(%23n)'/></svg>");
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    color:#efe6d2; overflow:hidden;
+    font-family:'Cormorant Garamond',Georgia,serif; -webkit-font-smoothing:antialiased;
+    background:radial-gradient(120% 90% at 50% 38%, #2c2016 0%, #17110b 55%, #0a0705 100%);
+  }
+
+  /* ───── an ink-wash landscape on old silk, painted once ───── */
+  .silk{position:fixed; inset:0; z-index:0; pointer-events:none;
+    background:var(--fiber); background-size:300px; opacity:.5; mix-blend-mode:overlay}
+  .world{position:fixed; inset:0; z-index:1; pointer-events:none; will-change:transform}
+  .land{position:absolute; inset:0; width:100%; height:100%}
+  .mistband{position:absolute; left:-15vw; right:-15vw; top:44vh; height:22vh;
+    background:radial-gradient(50% 50% at 50% 50%, rgba(232,214,180,.07), transparent 70%);
+    animation:drift 40s ease-in-out infinite alternate; will-change:transform}
+  @keyframes drift{from{transform:translateX(-5vw)} to{transform:translateX(5vw)}}
+
+  /* the floor and the stool live in the same world as the scroll: the camera moves them */
+  .ground{position:fixed; inset:0; z-index:4; pointer-events:none; will-change:transform}
+  .floor{position:absolute; left:-10vw; right:-10vw; height:120vh;
+    top:calc(var(--stoolTop) + var(--stoolW) * .33);
+    background:
+      radial-gradient(42% 30% at 50% 0%, rgba(255,170,96,.10), transparent 70%),
+      repeating-linear-gradient(to bottom, rgba(255,230,200,.035) 0 1px, transparent 1px 26px),
+      linear-gradient(#1c130c, #0b0705 40%);
+    box-shadow:0 -1px 0 rgba(255,220,170,.08)}
+  .stool{position:absolute; left:50%; top:var(--stoolTop); width:var(--stoolW); margin-left:calc(var(--stoolW) / -2);
+    will-change:transform}
+  .stool svg{display:block; width:100%; height:auto; overflow:visible}
+  .stool::after{content:''; position:absolute; left:6%; right:6%; bottom:-10px; height:26px; z-index:-1;
+    background:radial-gradient(closest-side, rgba(0,0,0,.75), transparent)}
+
+  /* paper lanterns hang at the sides; they are the only light */
+  .glow{position:fixed; inset:0; z-index:2; pointer-events:none;
+    background:
+      radial-gradient(circle at 9% 30%, rgba(255,128,52,.20), transparent 26%),
+      radial-gradient(circle at 91% 30%, rgba(255,128,52,.20), transparent 26%),
+      radial-gradient(60% 40% at 50% var(--stoolTop), rgba(255,170,96,.10), transparent 70%);
+    animation:flicker 5.3s steps(1) infinite}
+  @keyframes flicker{0%{opacity:1} 13%{opacity:.88} 21%{opacity:.97} 37%{opacity:.9} 52%{opacity:1} 68%{opacity:.86} 81%{opacity:.95}}
+  .lanterns{position:fixed; inset:0; z-index:3; pointer-events:none; will-change:transform}
+  .lantern{position:absolute; top:0; width:84px; transform-origin:50% 0; animation:swing 7s ease-in-out infinite}
+  .lantern.l{left:calc(9% - 42px)} .lantern.r{left:calc(91% - 42px); animation-delay:-3.1s}
+  @keyframes swing{0%,100%{transform:rotate(-1.6deg)} 50%{transform:rotate(1.6deg)}}
+  .lantern i{display:block; margin:0 auto}
+  .lantern .str{width:2px; height:15vh; background:linear-gradient(#000, #4a3420)}
+  .lantern .cap{width:44px; height:10px; border-radius:2px; background:linear-gradient(#d8b25a, #7a5a22)}
+  .lantern .body{position:relative; width:84px; height:100px; border-radius:46% / 50%;
+    background:radial-gradient(circle at 50% 45%, #ffd88a 0%, #f06a32 34%, #b0261b 68%, #5c120d 100%);
+    box-shadow:0 0 50px 14px rgba(255,110,40,.32)}
+  .lantern .body::before{content:''; position:absolute; inset:0; border-radius:inherit;
+    background:repeating-linear-gradient(90deg, rgba(70,10,5,.32) 0 2px, transparent 2px 14px);
+    -webkit-mask-image:radial-gradient(closest-side, #000 60%, transparent); mask-image:radial-gradient(closest-side, #000 60%, transparent)}
+  .lantern .body b{position:absolute; inset:0; display:grid; place-items:center; font-family:'Ma Shan Zheng',serif;
+    font-weight:400; font-size:34px; color:rgba(80,12,6,.72)}
+  .lantern .tas{width:9px; height:46px; margin-top:-1px;
+    background:repeating-linear-gradient(90deg, #b3261e 0 1px, #6f150e 1px 2px);
+    -webkit-mask-image:linear-gradient(#000 70%, transparent); mask-image:linear-gradient(#000 70%, transparent)}
+
+  /* while a scroll is being read the lanterns step back, so the panels beside it stay legible */
+  .lantern .body,.lantern .tas,.lantern .cap{transition:opacity .8s ease}
+  body.reading .lantern .body, body.reading .lantern .tas, body.reading .lantern .cap{opacity:.22}
+  body.reading .glow{opacity:.45}
+  #gl{position:fixed; inset:0; z-index:7; display:block; width:100%; height:100%}
+  #gl.hot{cursor:pointer}
+
+  /* ───── words ───── */
+  .words{position:fixed; inset:0; z-index:6; pointer-events:none; transition:opacity .7s ease}
+  body.reading .words{opacity:0}
+  .title{position:absolute; left:0; right:0; top:11vh; text-align:center}
+  .big{font-family:'Cinzel',serif; font-weight:400; font-size:clamp(40px, 7vw, 108px);
+    letter-spacing:.05em; line-height:1; color:#f4ead6; text-shadow:0 2px 30px rgba(0,0,0,.6)}
+  .sub{margin-top:14px; font-style:italic; font-size:clamp(18px,1.9vw,26px); color:rgba(244,234,214,.72)}
+  .sub i{font-style:normal; font-family:'Ma Shan Zheng',serif; color:var(--accent); margin:0 .4em}
+  .in{animation:rise .9s cubic-bezier(.16,1,.3,1) both}
+  @keyframes rise{from{opacity:0; transform:translateY(14px)} to{opacity:1; transform:none}}
+
+  /* ───── the reading panels beside an open scroll ───── */
+  .panel{position:fixed; top:50%; z-index:8; width:var(--pw, 320px); opacity:0; pointer-events:none;
+    transition:opacity .6s ease, transform .8s cubic-bezier(.16,1,.3,1)}
+  .panel.l{text-align:right; transform:translate(16px,-50%)}
+  .panel.r{transform:translate(-16px,-50%)}
+  body.shown .panel{opacity:1; pointer-events:auto; transform:translate(0,-50%)}
+  .panel .glyph{font-family:'Ma Shan Zheng',serif; font-size:58px; line-height:1; color:var(--accent)}
+  .panel .name{font-family:'Cinzel',serif; font-weight:500; font-size:clamp(30px,3.2vw,48px); letter-spacing:.05em; line-height:1.05; margin-top:8px}
+  .panel .meaning{font-style:italic; font-size:20px; color:rgba(244,234,214,.66); margin-top:6px}
+  .panel .rule{height:1px; width:70px; background:var(--accent); opacity:.7; margin:20px 0 18px auto}
+  .panel .blurb{font-size:clamp(18px,1.55vw,22px); line-height:1.4; color:rgba(244,234,214,.9)}
+  .panel dl{display:grid; grid-template-columns:1fr 1fr; gap:18px 24px}
+  .panel dt{font-family:'JetBrains Mono',monospace; font-size:9.5px; letter-spacing:.16em; text-transform:uppercase; color:rgba(244,234,214,.45)}
+  .panel dd{font-size:19px; font-weight:600; margin-top:3px}
+  .panel .nda{margin-top:22px; font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:#e0705f}
+  .cta{display:inline-flex; align-items:center; gap:12px; margin-top:28px; color:#efe6d2; text-decoration:none;
+    font-family:'JetBrains Mono',monospace; font-size:10.5px; letter-spacing:.16em; text-transform:uppercase;
+    border:1px solid rgba(239,230,210,.35); border-radius:100px; padding:11px 18px; transition:background .3s, border-color .3s}
+  .cta:hover{background:rgba(239,230,210,.08); border-color:var(--accent)}
+
+  .chrome{position:fixed; inset:0; z-index:30; pointer-events:none;
+    padding:26px clamp(16px,3.2vw,48px); display:flex; flex-direction:column; justify-content:space-between}
+  .row{display:flex; justify-content:space-between; align-items:flex-start; gap:20px}
+  .mono{font-family:'JetBrains Mono',monospace; font-size:10.5px; letter-spacing:.16em; text-transform:uppercase}
+  .dim{color:rgba(244,234,214,.45)}
+  .counter{white-space:nowrap; font-family:'Cinzel',serif; font-size:26px; letter-spacing:.08em; color:var(--accent)}
+  .counter small{font-size:12px; color:rgba(244,234,214,.4); margin-left:6px}
+  .close{pointer-events:auto; opacity:0; transform:translateY(-6px); transition:opacity .4s, transform .4s;
+    background:none; border:1px solid rgba(244,234,214,.3); color:#efe6d2; border-radius:100px;
+    padding:9px 16px; cursor:pointer; font:inherit; white-space:nowrap}
+  body.reading .close{opacity:1; transform:none}
+  body:not(.reading) .close{pointer-events:none}
+
+  .pager{position:fixed; left:50%; bottom:24px; transform:translateX(-50%); z-index:31; display:flex; gap:10px; transition:opacity .5s}
+  body.reading .pager{opacity:0; pointer-events:none}
+  .pager button{width:34px; height:34px; display:grid; place-items:center; cursor:pointer;
+    font-family:'Ma Shan Zheng',serif; font-size:19px; color:rgba(239,230,210,.6);
+    background:transparent; border:1px solid rgba(239,230,210,.25); border-radius:3px;
+    transition:background .3s, color .3s, border-color .3s, transform .3s}
+  .pager button:hover{border-color:rgba(239,230,210,.6); color:#efe6d2}
+  .pager button.on{background:#b3261e; border-color:#b3261e; color:#f6e3d0; transform:rotate(-4deg)}
+
+  .notice{position:fixed; left:50%; top:62vh; transform:translate(-50%,-140%); z-index:9; text-align:center; max-width:90vw;
+    font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.16em; text-transform:uppercase;
+    color:rgba(244,234,214,.6); transition:opacity .6s}
+  .notice.gone{opacity:0; pointer-events:none}
+  .notice code{display:block; margin:10px 0; text-transform:none; letter-spacing:0; color:#efe6d2}
+
+  .cta-m{display:none}
+  @media (max-width:860px){
+    :root{--stoolW:88vw; --stoolTop:64vh}
+    .panel{display:none}
+    .cta-m{display:inline-flex; position:fixed; left:50%; bottom:22px; z-index:31; transform:translate(-50%,10px);
+      opacity:0; pointer-events:none; transition:opacity .5s, transform .5s; background:rgba(15,10,6,.7); margin:0; white-space:nowrap}
+    body.reading #hint{opacity:0}
+    body.shown .cta-m{opacity:1; pointer-events:auto; transform:translate(-50%,0)}
+    .lantern{width:56px} .lantern.l{left:calc(8% - 28px)} .lantern.r{left:calc(92% - 28px)}
+    .lantern .str{height:9vh} .lantern .body{width:56px; height:68px} .lantern .body b{font-size:22px} .lantern .cap{width:30px}
+    .title{top:14vh}
+    .chrome .row:first-child .dim, .chrome .row:last-child > div:last-child{display:none}
+    .pager{bottom:60px}
+  }
+  @media (prefers-reduced-motion:reduce){
+    .mistband,.lantern,.glow{animation:none}
+  }
+</style>
+</head>
+<body>
+
+<div class="silk"></div>
+<div class="world" id="world">
+  <svg class="land" id="land" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMax slice" aria-hidden="true"></svg>
+  <div class="mistband"></div>
+</div>
+<div class="glow"></div>
+<div class="lanterns" id="lanterns">
+  <div class="lantern l"><i class="str"></i><i class="cap"></i><i class="body"><b>福</b></i><i class="cap"></i><i class="tas"></i></div>
+  <div class="lantern r"><i class="str"></i><i class="cap"></i><i class="body"><b>壽</b></i><i class="cap"></i><i class="tas"></i></div>
+</div>
+
+<div class="ground" id="ground">
+  <div class="floor"></div>
+  <div class="stool" id="stool">
+    <svg viewBox="0 0 900 306" aria-hidden="true">
+      <defs>
+        <linearGradient id="wTop" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#8a5030"/><stop offset=".25" stop-color="#5c301b"/><stop offset="1" stop-color="#2a140a"/>
+        </linearGradient>
+        <linearGradient id="wApron" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#3e1f11"/><stop offset="1" stop-color="#22100a"/>
+        </linearGradient>
+        <linearGradient id="wLeg" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stop-color="#1e0e07"/><stop offset=".45" stop-color="#5a2f1b"/><stop offset="1" stop-color="#1e0e07"/>
+        </linearGradient>
+        <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#f2d98f"/><stop offset=".5" stop-color="#b8893d"/><stop offset="1" stop-color="#7a5622"/>
+        </linearGradient>
+      </defs>
+      <g fill="url(#wLeg)">
+        <path d="M104,58 L140,58 L146,262 C146,274 152,282 164,288 L162,298 L116,298 C112,288 112,280 110,270 Z"/>
+        <path d="M796,58 L760,58 L754,262 C754,274 748,282 736,288 L738,298 L784,298 C788,288 788,280 790,270 Z"/>
+      </g>
+      <path d="M144,232 L756,232 L756,246 L520,246 C500,246 478,256 450,262 C422,256 400,246 380,246 L144,246 Z" fill="url(#wApron)"/>
+      <path d="M150,239 L750,239" stroke="url(#gold)" stroke-width="1.2" opacity=".55"/>
+      <g fill="url(#wApron)">
+        <path d="M140,94 L196,94 C176,100 162,114 156,134 C150,118 146,104 140,100 Z"/>
+        <path d="M760,94 L704,94 C724,100 738,114 744,134 C750,118 754,104 760,100 Z"/>
+      </g>
+      <path d="M96,58 L804,58 L804,94 C780,94 768,100 756,110 C744,100 730,96 700,96 L520,96 C498,96 478,108 450,118 C422,108 402,96 380,96 L200,96 C170,96 156,100 144,110 C132,100 120,94 96,94 Z" fill="url(#wApron)"/>
+      <path d="M104,68 L796,68" stroke="url(#gold)" stroke-width="1.4" opacity=".7"/>
+      <circle cx="450" cy="88" r="13" fill="none" stroke="url(#gold)" stroke-width="1.6" opacity=".85"/>
+      <path d="M443,90 c0,-7 10,-8 11,-1 c1,5 -6,6 -6,2" fill="none" stroke="url(#gold)" stroke-width="1.4" opacity=".85"/>
+      <path d="M60,30 L840,30 C856,30 866,22 872,10 C880,16 884,30 876,44 C872,52 862,58 850,58 L50,58 C38,58 28,52 24,44 C16,30 20,16 28,10 C34,22 44,30 60,30 Z" fill="url(#wTop)"/>
+      <path d="M62,31 L838,31" stroke="rgba(255,220,180,.32)" stroke-width="1"/>
+      <path d="M40,50 L860,50" stroke="rgba(0,0,0,.45)" stroke-width="1.2"/>
+      <g fill="none" stroke="rgba(0,0,0,.22)" stroke-width="1">
+        <path d="M90,38 C260,35 420,41 600,37 C700,35 780,39 830,37"/>
+        <path d="M120,44 C300,42 460,46 640,43 C720,42 790,45 820,44"/>
+      </g>
+      <g fill="url(#wTop)">
+        <path d="M200,31 L262,31 L262,20 C252,26 241,28 231,28 C221,28 210,26 200,20 Z"/>
+        <path d="M638,31 L700,31 L700,20 C690,26 679,28 669,28 C659,28 648,26 638,20 Z"/>
+      </g>
+    </svg>
+  </div>
+</div>
+
+<div class="words">
+  <div class="title"><div class="big" id="bigTop"></div><div class="sub" id="bigBot"></div></div>
+</div>
+
+<canvas id="gl" aria-label="Project scrolls"></canvas>
+
+<aside class="panel l" id="panelL"></aside>
+<aside class="panel r" id="panelR"></aside>
+<a class="cta cta-m" id="ctaM" href="#" onclick="return false">Read the full scroll ⟶</a>
+
+<div class="notice" id="notice">Fetching the scrolls…</div>
+
+<nav class="pager" id="pager" aria-label="Scrolls"></nav>
+
+<div class="chrome">
+  <div class="row">
+    <div>
+      <div class="mono" style="margin-bottom:7px">Viresh D — The archive</div>
+      <div class="mono dim">Five scrolls / one on the stand at a time</div>
+    </div>
+    <div style="display:flex; align-items:center; gap:18px">
+      <button class="close mono" id="close">Roll up ✕</button>
+      <div class="counter" id="counter">I<small>/ V</small></div>
+    </div>
+  </div>
+  <div class="row" style="align-items:flex-end">
+    <div class="mono dim" id="hint">Click the scroll to unroll it</div>
+    <div class="mono dim">Scroll · ↑↓ to change · Esc to roll up</div>
+  </div>
+</div>
+
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+} }
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { clone as skeletonClone } from 'three/addons/utils/SkeletonUtils.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+
+// silk = the backing you see on a closed roll; cord and wax tie it shut
+const SCROLLS = [
+  { name:'LeaseHub', glyph:'屋', meaning:'Scroll of the House', year:'2026', industry:'Real Estate', client:'LeaseHub', tag:'Freelance',
+    blurb:'Designed a story led data experience.', img:'images/leasehub.jpg',
+    accent:'#9b84ff', silk:'#9a8ad6', cord:'#5b2a9e', wax:'#3d1f7a', wood:'#ffffff', seed:11, flip:false },
+  { name:'Youhonk', glyph:'車', meaning:'Scroll of the Carriage', year:'2026', industry:'Automobile', client:'Youhonk · Yellowslice', tag:'B2B App',
+    blurb:'A platform for workshop owners to manage customer orders and vehicle services.', img:'images/youhonk.jpg',
+    accent:'#FF9A1F', silk:'#f0b25c', cord:'#1f3a5c', wax:'#a2380f', wood:'#ffd9a8', seed:29, flip:true },
+  { name:'BSE Star MF', glyph:'市', meaning:'Scroll of the Market', year:'2025', industry:'Fintech', client:'Bombay Stock Exchange', tag:'Platform',
+    blurb:'Simplified complex financial journeys for mutual fund distributors.', img:'images/bse.jpg',
+    accent:'#4fd2ff', silk:'#7cb8c6', cord:'#0f4f66', wax:'#8e1d17', wood:'#c9d4d6', seed:47, flip:false },
+  { name:'Nuvama', glyph:'富', meaning:'Scroll of Fortune', year:'2025', industry:'Fintech', client:'Nuvama Wealth', tag:'Consumer',
+    blurb:'An industry-first feature: apply for an IPO as a family.', img:'images/nuvama.png', nda:true,
+    accent:'#FF5A4A', silk:'#c8574a', cord:'#a8202a', wax:'#6e0f0c', wood:'#e0a090', seed:83, flip:true },
+  { name:'GoDark', glyph:'暗', meaning:'Scroll of Shadow', year:'2024', industry:'Crypto Exchange', client:'Goquant', tag:'Consumer',
+    blurb:'Designed the GoDark DEX for crypto traders.', img:'images/goquant.jpg',
+    accent:'#3DE68A', silk:'#4d6656', cord:'#1a6b40', wax:'#0d3d24', wood:'#6a6a6a', seed:131, flip:false },
+];
+const N = SCROLLS.length;
+const ROMAN = ['I','II','III','IV','V'];
+const reduced = matchMedia('(prefers-reduced-motion:reduce)').matches;
+const clamp = (v,a,b) => v < a ? a : v > b ? b : v;
+const lerp = (a,b,t) => a + (b - a) * t;
+const wrap = i => ((i % N) + N) % N;
+const ease = p => p < .5 ? 4*p*p*p : 1 - Math.pow(-2*p + 2, 3) / 2;
+function rng(seed){ let s = seed % 2147483647; return () => (s = s * 16807 % 2147483647) / 2147483647; }
+const $ = id => document.getElementById(id);
+
+// ───── model facts (from the asset notes) ─────
+const CLIP_BIND = 0.5;          // the cord and seal are gone by here
+const CLIP_END = 3.5;           // fully unrolled
+const ROLL_BOTTOM = -0.155;     // underside of the closed roll, in model space
+const OPEN_TOP = 0.38, OPEN_BOTTOM = -2.40;
+const HALF_W = 0.68;            // finial to finial
+const LIFT = 2.6;               // how far it rises off the stand before it hangs
+const PAPER = { x0:276, y0:1135, x1:1772, y1:3482 };   // the clear area of the parchment texture, in pixels
+
+// The opening is one timeline, so closing is the same thing played backwards:
+// untie on the stand → rise → unroll while the camera follows and draws back.
+const T_END = 4.2;
+const clipAt = T => T < 0.9 ? Math.min(T, CLIP_BIND) : CLIP_BIND + clamp((T - 0.9) / 3.0, 0, 1) * (CLIP_END - CLIP_BIND);
+const liftAt = T => ease(clamp((T - 0.35) / 1.5, 0, 1));
+
+// ───── the landscape: misty ridges, a low red sun, a few birds — drawn once ─────
+(function paintLand(){
+  const r = rng(7), W = 1600;
+  const ridges = [
+    { base:470, amp:150, f1:.0042, f2:.013, col:'#3a2c1f', a:.55 },
+    { base:560, amp:120, f1:.0055, f2:.017, col:'#2c2117', a:.7 },
+    { base:640, amp:90,  f1:.0071, f2:.021, col:'#21180f', a:.85 },
+  ];
+  let svg = `<defs><radialGradient id="sun"><stop offset="0" stop-color="#b8432a" stop-opacity=".62"/><stop offset=".8" stop-color="#a33a24" stop-opacity=".5"/><stop offset="1" stop-color="#a33a24" stop-opacity="0"/></radialGradient>`;
+  ridges.forEach((g, k) => {
+    svg += `<linearGradient id="rg${k}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${g.col}" stop-opacity="${g.a}"/><stop offset=".55" stop-color="${g.col}" stop-opacity="${g.a * .55}"/><stop offset="1" stop-color="${g.col}" stop-opacity="0"/></linearGradient>`;
+  });
+  svg += `</defs><circle cx="1150" cy="300" r="96" fill="url(#sun)"/>`;
+  ridges.forEach((g, k) => {
+    const p1 = r() * 6, p2 = r() * 6;
+    let d = `M0,900 `;
+    for (let x = 0; x <= W; x += 16){
+      const y = g.base - g.amp * (Math.pow(Math.abs(Math.sin(x * g.f1 + p1)), 1.6) * .72 + (Math.sin(x * g.f2 + p2) * .5 + .5) * .28);
+      d += `L${x},${y.toFixed(1)} `;
+    }
+    svg += `<path d="${d}L${W},900 Z" fill="url(#rg${k})"/>`;
+  });
+  [[1040,250,1],[1078,232,.8],[1110,262,.7],[1200,214,.9],[990,280,.6]].forEach(([x,y,s]) => {
+    svg += `<path d="M${x},${y} q${6*s},${-6*s} ${12*s},0 q${6*s},${-6*s} ${12*s},0" fill="none" stroke="#120c08" stroke-width="${1.8*s}" stroke-linecap="round"/>`;
+  });
+  $('land').innerHTML = svg;
+})();
+
+// ───── a dragon for each scroll, drawn by code, painted faintly into the parchment ─────
+function dragonSVG(sc, ink, paper){
+  const W = 1000, H = 560, W0 = 30, NP = 180;
+  const r = rng(sc.seed);
+  const A1 = .17 + r()*.07, f1 = 1.05 + r()*.45, p1 = r(), A2 = .05 + r()*.04, f2 = 2.6 + r()*1.1, p2 = r();
+  const P = [];
+  for (let i = 0; i <= NP; i++){
+    const t = i / NP;
+    let x = W * (.25 + .62 * t);
+    const y = H * (.5 + A1 * Math.sin(2*Math.PI*(f1*t + p1)) + A2 * Math.sin(2*Math.PI*(f2*t + p2)));
+    if (sc.flip) x = W - x;
+    P.push([x, y]);
+  }
+  const T = P.map((p, i) => {
+    const a = P[Math.max(0, i-1)], b = P[Math.min(NP, i+1)];
+    const dx = b[0]-a[0], dy = b[1]-a[1], l = Math.hypot(dx, dy) || 1;
+    return [dx/l, dy/l];
+  });
+  const Nn = T.map(([x, y]) => [-y, x]);
+  const sgn = Math.sign(Nn.reduce((a, n) => a + n[1], 0)) || 1;
+  const D = Nn.map(([x, y]) => [x * sgn, y * sgn]);
+  const U = D.map(([x, y]) => [-x, -y]);
+  const wid = t => W0 * (.62 + .38 * Math.sin(Math.PI * Math.min(1, t * 1.25 + .1))) * Math.pow(1 - t, .55);
+  const add = (p, v, k) => [p[0] + v[0]*k, p[1] + v[1]*k];
+  const f = v => v[0].toFixed(1) + ',' + v[1].toFixed(1);
+  const jit = () => (r() - .5) * 2.6;
+
+  const L = [], R = [];
+  P.forEach((p, i) => { const w = wid(i / NP); L.push(add(p, Nn[i], w + jit())); R.push(add(p, Nn[i], -w + jit())); });
+  const body = 'M' + L.map(f).join('L') + 'L' + R.reverse().map(f).join('L') + 'Z';
+  const BL = [], BR = [];
+  P.forEach((p, i) => { const w = wid(i / NP); BL.push(add(p, D[i], w * .15)); BR.push(add(p, D[i], w * .82)); });
+  const belly = 'M' + BL.map(f).join('L') + 'L' + BR.slice().reverse().map(f).join('L') + 'Z';
+  let scales = '';
+  for (let row = 0; row < 2; row++) for (let i = 8 + row*2; i < NP - 12; i += 4){
+    const t = i / NP, w = wid(t), rr = w * .3, c = add(P[i], U[i], w * (row ? .12 : .55));
+    scales += `M${f(add(c, U[i], rr))}A${rr.toFixed(1)},${rr.toFixed(1)} 0 0 ${sc.flip ? 0 : 1} ${f(add(c, U[i], -rr))}`;
+  }
+  let fins = '';
+  for (let i = 9; i < NP * .93; i += 4){
+    const t = i / NP, w = wid(t), sl = W0 * .62 * (1 - t * .6), base = add(P[i], U[i], w * .85);
+    fins += `M${f(add(base, T[i], -w*.38))}L${f(add(add(P[i], U[i], w + sl), T[i], -sl * .9))}L${f(add(base, T[i], w*.38))}Z`;
+  }
+  let legs = '', claws = '';
+  [.15, .3, .57, .71].forEach((t, k) => {
+    const i = Math.round(t * NP), w = wid(t), back = k > 1 ? -1 : 1, fw = [T[i][0] * back, T[i][1] * back];
+    const hip = add(P[i], D[i], w * .55), knee = add(add(hip, D[i], W0 * 1.1), fw, -W0 * .75), foot = add(add(knee, D[i], W0 * .45), fw, W0 * .95);
+    legs += `M${f(hip)}Q${f(knee)} ${f(foot)}`;
+    [.15, .65, 1.15].forEach(a => {
+      const dir = [fw[0] * Math.cos(a) + D[i][0] * Math.sin(a), fw[1] * Math.cos(a) + D[i][1] * Math.sin(a)];
+      claws += `M${f(foot)}Q${f(add(add(foot, dir, W0 * .3), U[i], W0 * .1))} ${f(add(foot, dir, W0 * .55))}`;
+    });
+  });
+  const dir = [-T[0][0], -T[0][1]], ang = Math.atan2(dir[1], dir[0]) * 180 / Math.PI, up = dir[0] < 0 ? ' scale(1,-1)' : '', u = W0 * 1.35;
+  const head = `<g transform="translate(${f(P[0])}) rotate(${ang.toFixed(1)})${up} scale(${u})">
+      <path d="M-0.5,-0.85 L-1.7,-0.45 L-0.75,-0.2 L-2.0,0.3 L-0.65,0.32 L-1.6,0.95 L-0.3,0.72 Z" fill="${ink}"/>
+      <path d="M-0.4,-0.9 C0.6,-1.4 2.0,-1.3 2.9,-0.7 C3.3,-0.5 3.6,-0.25 3.5,0.05 C2.8,0.15 2.1,0.25 1.5,0.55 C0.9,0.95 0.1,1.0 -0.5,0.7 Z" fill="${ink}"/>
+      <path d="M0.3,0.78 C1.2,0.88 2.2,1.08 3.1,1.58 C2.2,1.58 1.2,1.48 0.2,1.18 Z" fill="${ink}"/>
+      <circle cx="1.55" cy="-0.55" r="0.27" fill="${paper}"/><circle cx="1.6" cy="-0.55" r="0.13" fill="${ink}"/>
+      <g fill="none" stroke="${ink}" stroke-linecap="round">
+        <path d="M0.7,-1.0 C0.0,-1.9 -1.0,-2.3 -2.2,-2.2" stroke-width="0.22"/>
+        <path d="M0.3,-0.9 C-0.4,-1.5 -1.2,-1.7 -1.9,-1.5" stroke-width="0.15"/>
+        <path d="M3.3,-0.25 C3.0,-1.6 1.6,-2.6 -0.6,-2.9 C-1.6,-3.0 -2.4,-2.7 -2.8,-2.3" stroke-width="0.07"/>
+        <path d="M3.2,0.3 C3.9,1.4 3.1,2.6 1.2,3.0 C0.0,3.2 -1.0,3.0 -1.6,2.6" stroke-width="0.07"/>
+      </g></g>`;
+  const tE = P[NP], tT = T[NP], tN = Nn[NP];
+  let tail = '';
+  [-1, 0, 1].forEach(s => {
+    tail += `M${f(add(tE, tN, W0*.25))}Q${f(add(add(tE, tT, W0*.8), tN, s*W0*.2))} ${f(add(add(tE, tT, W0 * (1.9 - Math.abs(s) * .5)), tN, s * W0 * .9))}Q${f(add(tE, tT, W0*.6))} ${f(add(tE, tN, -W0*.25))}Z`;
+  });
+  const pc = add(add(P[0], dir, u * 4.1), U[0], u * .9), pr = u * .85;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}">
+    <g fill="none" stroke="${ink}" stroke-linecap="round" stroke-linejoin="round">
+      <path d="${legs}" stroke-width="${W0*.36}"/><path d="${claws}" stroke-width="${W0*.11}"/></g>
+    <path d="${fins}" fill="${ink}"/><path d="${tail}" fill="${ink}"/><path d="${body}" fill="${ink}"/>
+    <path d="${belly}" fill="${paper}" opacity=".42"/>
+    <path d="${scales}" fill="none" stroke="${paper}" stroke-width="1.5" opacity=".55"/>
+    ${head}
+    <circle cx="${pc[0].toFixed(1)}" cy="${pc[1].toFixed(1)}" r="${pr.toFixed(1)}" fill="none" stroke="${ink}" stroke-width="3"/>
+  </svg>`;
+}
+
+// ───── renderer, scene, light ─────
+const canvas = $('gl');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias:true, alpha:true });
+renderer.setPixelRatio(Math.min(2, devicePixelRatio));
+renderer.toneMapping = THREE.AgXToneMapping;
+renderer.toneMappingExposure = 1.05;
+renderer.setClearColor(0x000000, 0);
+
+const scene = new THREE.Scene();
+const pmrem = new THREE.PMREMGenerator(renderer);
+scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+scene.environmentIntensity = 0.35;
+scene.add(new THREE.HemisphereLight('#ffe6c4', '#26170c', 0.75));
+const key = new THREE.DirectionalLight('#ffe0b4', 1.6); key.position.set(0.6, 1.2, 3); scene.add(key);
+// the two lanterns, warm and close
+const lanternL = new THREE.PointLight('#ff8a3c', 6, 0, 2), lanternR = new THREE.PointLight('#ff8a3c', 6, 0, 2);
+scene.add(lanternL, lanternR);
+
+const camera = new THREE.PerspectiveCamera(22, 1, 0.05, 60);
+const tanHalf = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
+
+// ───── state ─────
+const items = [];
+let ready = false, needs = true;
+let offset = 0, target = 0, lastFocus = -1, openI = -1, dir = 0, hoverK = 0, hovering = false;
+let glide = null;               // a change of scroll in progress: lift, glide across, settle
+const AIR = .24;                // how high both scrolls float while they pass
+
+// ───── build the scrolls once the model is in ─────
+const fontsReady = Promise.all([
+  '600 120px Cinzel', 'italic 600 60px "Cormorant Garamond"', '200px "Ma Shan Zheng"', '500 40px "JetBrains Mono"',
+].map(f => document.fonts.load(f))).catch(() => {});
+
+if (location.protocol === 'file:'){
+  $('notice').innerHTML = 'The scroll model can’t load from a file:// page. From the vd-portfolio folder run'
+    + '<code>python3 -m http.server 3002 --directory Explorations</code>then open localhost:3002/project%20listings%20view/scrolls.html';
+} else {
+  new GLTFLoader().load('models/scroll.glb', gltf => {
+    const clip = gltf.animations[0];
+    SCROLLS.forEach(sc => {
+      const root = skeletonClone(gltf.scene);
+      const mats = {};
+      root.traverse(o => {
+        if (!o.isMesh) return;
+        if (o.isSkinnedMesh) o.frustumCulled = false;   // bounds come from the flat rest pose
+        // each scroll gets its own copy of the materials, dyed for its project
+        o.material = mats[o.material.name] ||= o.material.clone();
+      });
+      if (mats.ParchmentBack) mats.ParchmentBack.color.set(sc.silk);
+      if (mats.CordRed) mats.CordRed.color.set(sc.cord).multiplyScalar(.8);
+      if (mats.SealingWax) mats.SealingWax.color.set(sc.wax);
+      if (mats.Wood) mats.Wood.color.set(sc.wood);
+
+      const mixer = new THREE.AnimationMixer(root);
+      const action = mixer.clipAction(clip);
+      action.setLoop(THREE.LoopOnce, 1);
+      action.clampWhenFinished = true;
+      action.play(); action.paused = true; action.time = 0;
+      mixer.update(0);                                   // the rest pose is open; pin it closed before anything draws
+
+      scene.add(root);
+      const bottom = root.getObjectByName('BottomRoller');
+      items.push({ sc, root, mixer, action, bottom, rig: rigLoose(root, bottom),
+                   front: mats.ParchmentFront, frontMap: mats.ParchmentFront.map, T: 0, clipT: 0 });
+    });
+    ready = true;
+    $('notice').classList.add('gone');
+    layout();
+  }, undefined, err => {
+    $('notice').innerHTML = 'The scroll model did not load.<code>' + (err.message || err) + '</code>';
+  });
+}
+
+// ───── the parchment's content, painted onto its texture so it rolls with the paper ─────
+const page = document.createElement('canvas');
+const pageTex = new THREE.CanvasTexture(page);
+pageTex.flipY = false;                                   // glTF textures are top-left
+pageTex.colorSpace = THREE.SRGBColorSpace;
+pageTex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+const imgCache = {};
+const loadImg = src => imgCache[src] ||= new Promise(res => { const im = new Image(); im.onload = () => res(im); im.onerror = () => res(null); im.src = src; });
+
+async function paintPage(it){
+  await fontsReady;
+  const sc = it.sc, base = it.frontMap.image;
+  page.width = base.width; page.height = base.height;
+  const g = page.getContext('2d');
+  g.drawImage(base, 0, 0);
+  const S = page.width / 2048;                            // the pixel rect is given for a 2048-wide texture
+  const X0 = PAPER.x0 * S, Y0 = PAPER.y0 * S, PW = (PAPER.x1 - PAPER.x0) * S, PH = (PAPER.y1 - PAPER.y0) * S;
+  const cx = X0 + PW / 2;
+  const INK = '#2a1a0c', BROWN = '#5a3a1e', CINNABAR = '#9a2c18';
+
+  // a dragon descending the length of the sheet, as faint as a watermark
+  const dImg = await loadImg('data:image/svg+xml;charset=utf-8,' + encodeURIComponent(dragonSVG(sc, '#3b2410', '#d8bf8c')));
+  if (dImg){
+    g.save(); g.globalAlpha = .16; g.translate(cx, Y0 + PH / 2); g.rotate(Math.PI / 2);
+    g.drawImage(dImg, -PH / 2, -PW / 2, PH, PW); g.restore();
+  }
+  g.textAlign = 'center'; g.textBaseline = 'alphabetic';
+
+  let y = Y0 + 250 * S;
+  g.fillStyle = CINNABAR; g.font = `${230 * S}px "Ma Shan Zheng"`; g.fillText(sc.glyph, cx, y);
+  y += 190 * S;
+  g.fillStyle = INK; g.font = `600 ${150 * S}px Cinzel`; g.letterSpacing = `${8 * S}px`;
+  fitText(g, sc.name.toUpperCase(), cx, y, PW * .94);
+  g.letterSpacing = '0px';
+  y += 100 * S;
+  g.fillStyle = BROWN; g.font = `italic 600 ${72 * S}px "Cormorant Garamond"`; g.fillText(sc.meaning, cx, y);
+  y += 60 * S;
+  g.strokeStyle = BROWN; g.lineWidth = 3 * S; g.beginPath(); g.moveTo(cx - 200 * S, y); g.lineTo(cx + 200 * S, y); g.stroke();
+
+  // the plate, mounted on lighter paper with an ink border
+  y += 70 * S;
+  const pw = 1180 * S, ph = 885 * S, px = cx - pw / 2;
+  g.fillStyle = 'rgba(244,230,196,.9)'; g.fillRect(px - 26 * S, y - 26 * S, pw + 52 * S, ph + 52 * S);
+  g.strokeStyle = 'rgba(42,26,12,.75)'; g.lineWidth = 4 * S; g.strokeRect(px - 26 * S, y - 26 * S, pw + 52 * S, ph + 52 * S);
+  const im = await loadImg(sc.img);
+  if (sc.nda){
+    g.fillStyle = '#0A0536'; g.fillRect(px, y, pw, ph);
+    if (im){ const k = Math.min(pw * .62 / im.width, ph * .5 / im.height); g.drawImage(im, cx - im.width * k / 2, y + ph / 2 - im.height * k / 2, im.width * k, im.height * k); }
+    const sxp = px + pw - 40 * S, syp = y + ph - 40 * S;     // a wax seal over the corner
+    const gr = g.createRadialGradient(sxp - 30 * S, syp - 30 * S, 10 * S, sxp, syp, 120 * S);
+    gr.addColorStop(0, '#e0655a'); gr.addColorStop(.6, '#8f1d16'); gr.addColorStop(1, '#5b0f0b');
+    g.fillStyle = gr; g.beginPath(); g.arc(sxp, syp, 120 * S, 0, Math.PI * 2); g.fill();
+    g.fillStyle = '#f3d9b0'; g.font = `700 ${58 * S}px Cinzel`; g.textBaseline = 'middle'; g.fillText('NDA', sxp, syp); g.textBaseline = 'alphabetic';
+  } else if (im){
+    g.save(); g.beginPath(); g.rect(px, y, pw, ph); g.clip();
+    g.filter = 'sepia(.22) saturate(.9)';
+    const k = Math.max(pw / im.width, ph / im.height);
+    g.drawImage(im, cx - im.width * k / 2, y + ph / 2 - im.height * k / 2, im.width * k, im.height * k);
+    g.restore();
+  }
+  y += ph + 96 * S;
+  g.fillStyle = BROWN; g.font = `500 ${40 * S}px "JetBrains Mono"`; g.letterSpacing = `${6 * S}px`;
+  g.fillText(`PLATE ${ROMAN[SCROLLS.indexOf(sc)]} · ${sc.client.toUpperCase()}`, cx, y);
+  g.letterSpacing = '0px';
+
+  y += 120 * S;
+  g.fillStyle = INK; g.font = `italic 600 ${84 * S}px "Cormorant Garamond"`;
+  wrapText(g, sc.blurb, cx, y, PW * .86, 98 * S, 3);
+
+  // year and trade at the foot of the clear area, a red seal beside them
+  const fy = Y0 + PH - 80 * S;
+  g.fillStyle = INK; g.font = `600 ${62 * S}px Cinzel`; g.letterSpacing = `${5 * S}px`;
+  g.fillText(`${sc.year} · ${sc.industry.toUpperCase()}`, cx - 60 * S, fy);
+  g.letterSpacing = '0px';
+  const st = 120 * S, stx = X0 + PW - st - 30 * S, sty = fy - st + 20 * S;
+  g.save(); g.translate(stx + st / 2, sty + st / 2); g.rotate(-.08);
+  g.fillStyle = 'rgba(160,32,22,.88)'; g.fillRect(-st / 2, -st / 2, st, st);
+  g.strokeStyle = 'rgba(246,227,208,.75)'; g.lineWidth = 4 * S; g.strokeRect(-st / 2 + 9 * S, -st / 2 + 9 * S, st - 18 * S, st - 18 * S);
+  g.fillStyle = '#f6e3d0'; g.font = `${88 * S}px "Ma Shan Zheng"`; g.textBaseline = 'middle'; g.fillText(sc.glyph, 0, 4 * S);
+  g.restore();
+
+  pageTex.needsUpdate = true;
+  it.front.map = pageTex;
+  it.front.needsUpdate = true;
+}
+function fitText(g, text, x, y, max){
+  const w = g.measureText(text).width;
+  if (w > max){ g.save(); g.translate(x, y); g.scale(max / w, 1); g.fillText(text, 0, 0); g.restore(); }
+  else g.fillText(text, x, y);
+}
+function wrapText(g, text, x, y, max, lh, lines){
+  const words = text.split(' '); let line = '', n = 0;
+  for (let i = 0; i < words.length; i++){
+    const test = line ? line + ' ' + words[i] : words[i];
+    if (g.measureText(test).width > max && line){
+      if (++n === lines){ g.fillText(line + '…', x, y); return; }
+      g.fillText(line, x, y); y += lh; line = words[i];
+    } else line = test;
+  }
+  g.fillText(line, x, y);
+}
+
+// ───── where things sit on screen ─────
+const stoolEl = $('stool'), groundEl = $('ground'), worldEl = $('world'), lanternsEl = $('lanterns');
+let W = 1, H = 1, ppuClosed = 500, camYClosed = 0, cradleY = 0, spacing = 4;
+function layout(){
+  W = innerWidth; H = innerHeight;
+  renderer.setSize(W, H, false);
+  camera.aspect = W / H; camera.updateProjectionMatrix();
+  groundEl.style.transform = ''; stoolEl.style.transform = '';
+  const r = stoolEl.getBoundingClientRect();
+  cradleY = r.top + r.height * (24 / 306);               // the cradles on top of the stand
+  stoolEl.style.transformOrigin = `50% ${(24 / 306 * 100).toFixed(2)}%`;
+  // closed: the roll spans a little more than the stand
+  ppuClosed = Math.min(780, W * (W < 860 ? .86 : .7)) / (HALF_W * 2);
+  // world y = 0 is the cradle; put it where the stool is drawn
+  camYClosed = (cradleY - H / 2) / ppuClosed;
+  // one screen apart: a neighbour waits just off the edge, and mid-glide both are in view side by side
+  spacing = Math.max(HALF_W * 2 + .5, (W / ppuClosed) * .98);
+  // the lanterns' light, from where the page draws them
+  const lx = (W * .41) / ppuClosed, ly = camYClosed + (H * .2) / ppuClosed;
+  lanternL.position.set(-lx, ly, 1.2); lanternR.position.set(lx, ly, 1.2);
+  needs = true;
+}
+addEventListener('resize', () => ready && layout());
+
+const bigTop = $('bigTop'), bigBot = $('bigBot'), hint = $('hint'), counter = $('counter'), pager = $('pager');
+const panelL = $('panelL'), panelR = $('panelR');
+SCROLLS.forEach((sc, i) => {
+  const b = document.createElement('button');
+  b.textContent = sc.glyph; b.title = sc.name; b.setAttribute('aria-label', sc.name);
+  b.addEventListener('click', () => go(i));
+  pager.appendChild(b);
+});
+function retext(el, html){ el.classList.remove('in'); void el.offsetWidth; el.innerHTML = html; el.classList.add('in'); }
+function onFocus(i){
+  const sc = SCROLLS[i];
+  document.documentElement.style.setProperty('--accent', sc.accent);
+  retext(bigTop, sc.name);
+  retext(bigBot, `${sc.meaning}<i>${sc.glyph}</i>${sc.year}`);
+  counter.innerHTML = `${ROMAN[i]}<small>/ V</small>`;
+  [...pager.children].forEach((b, k) => b.classList.toggle('on', k === i));
+  if (openI < 0) hint.textContent = sc.nda ? 'This one is sealed — click to see what may be shown' : 'Click the scroll to unroll it';
+  panelL.innerHTML = `<div class="glyph">${sc.glyph}</div><div class="name">${sc.name}</div><div class="meaning">${sc.meaning}</div><div class="rule"></div><p class="blurb">${sc.blurb}</p>`;
+  panelR.innerHTML = `<dl><div><dt>Year</dt><dd>${sc.year}</dd></div><div><dt>Industry</dt><dd>${sc.industry}</dd></div>
+    <div><dt>Client</dt><dd>${sc.client}</dd></div><div><dt>Kind</dt><dd>${sc.tag}</dd></div></dl>
+    ${sc.nda ? '<div class="nda">Sealed under NDA — shown with permission only</div>' : ''}
+    <a class="cta" href="#" onclick="return false">Read the full scroll <span>⟶</span></a>`;
+}
+
+function go(i){
+  if (openI >= 0 || glide) return;
+  let d = wrap(i) - wrap(Math.round(target));
+  if (d >  N/2) d -= N;
+  if (d < -N/2) d += N;
+  if (!d) return;
+  target = Math.round(target) + d;
+  // slow and even; a jump of several scrolls takes a little longer, never faster per scroll
+  glide = { from: offset, to: target, t: 0, dur: reduced ? .01 : 2.8 + .8 * (Math.abs(d) - 1), dir: Math.sign(d) };
+  hovering = false; canvas.classList.remove('hot');
+  needs = true;
+}
+async function openScroll(){
+  if (!ready || openI >= 0 || glide) return;
+  openI = wrap(Math.round(target));
+  document.body.classList.add('reading');
+  hint.textContent = 'Esc, or click outside, to roll it up';
+  await paintPage(items[openI]);
+  dir = 1; needs = true;
+}
+function closeScroll(){
+  if (openI < 0 || dir < 0) return;
+  document.body.classList.remove('shown');
+  dir = -1; needs = true;
+}
+function settleClosed(it){
+  it.front.map = it.frontMap; it.front.needsUpdate = true;
+  openI = -1; dir = 0;
+  document.body.classList.remove('reading');
+  onFocus(wrap(Math.round(offset)));
+}
+
+// ───── the loose parts: the hanger cord, the seal on its thread, the tassels ─────
+//
+// All of it runs on its own fixed clock of 1/120 s steps, whatever the browser's frame times.
+// Verlet integration reads each point's speed from its last step, so a step that changes length
+// from frame to frame (15 ms, then 21, then 17…) quietly pumps energy in: on real frame times
+// that made the cords buzz by up to 22 mm a frame and never settle.
+const G = 9.8;
+const STEP = 1 / 120;
+const tmpA = new THREE.Vector3(), tmpB = new THREE.Vector3(), tmpC = new THREE.Vector3(), tmpF = new THREE.Vector3();
+const tmpQ = new THREE.Quaternion(), tmpQ2 = new THREE.Quaternion();
+const Z_AXIS = new THREE.Vector3(0, 0, 1), Y_AXIS = new THREE.Vector3(0, 1, 0);
+let clockT = 0;
+
+// a slow draught: long, overlapping swells, nothing in it quicker than a few seconds
+const draught = t => reduced ? { x: 0, z: 0 }
+  : { x: .5 * Math.sin(t * .5) + .25 * Math.sin(t * 1.1 + 1.3), z: .35 * Math.sin(t * .37 + .4) + .15 * Math.sin(t * .9 + 2) };
+
+// A cord: a Verlet chain of points, held to its length by relaxation, drawn as one or two
+// twisted strands. Weight 0 pins a point; less than 1 makes it heavy (something hangs there).
+class Cord {
+  constructor(points, { parent, strands, samples, twists = 0, weights }){
+    this.n = points.length;
+    this.P = points.map(p => p.clone());
+    this.Q = points.map(p => p.clone());
+    this.seg = points.slice(1).map((p, i) => p.distanceTo(points[i]));
+    this.w = weights || points.map(() => 1);
+    this.samples = samples; this.twists = twists;
+    this.C = Array.from({ length: samples }, () => new THREE.Vector3());
+    this.T = this.C.map(() => new THREE.Vector3()); this.N = this.C.map(() => new THREE.Vector3()); this.B = this.C.map(() => new THREE.Vector3());
+    this.strands = strands.map(st => {
+      const mesh = new THREE.Mesh(tubeGeometry(samples), st.material);
+      mesh.frustumCulled = false;
+      parent.add(mesh);
+      return { mesh, r: st.r, off: st.off || 0, phase: st.phase || 0 };
+    });
+  }
+  // one step under a constant acceleration (gravity, the scroll's own moves, the draught)
+  integrate(h, f, keep){
+    const h2 = h * h;
+    for (let i = 0; i < this.n; i++){
+      if (!this.w[i]) continue;
+      const p = this.P[i], q = this.Q[i];
+      const vx = (p.x - q.x) * keep, vy = (p.y - q.y) * keep, vz = (p.z - q.z) * keep;
+      q.copy(p);
+      p.x += vx + f.x * h2; p.y += vy + f.y * h2; p.z += vz + f.z * h2;
+    }
+  }
+  // hold every link to its length; `after` pushes points out of things, once per pass
+  relax(passes, after){
+    for (let k = 0; k < passes; k++){
+      for (let i = 0; i < this.n - 1; i++){
+        const a = this.P[i], b = this.P[i + 1], wa = this.w[i], wb = this.w[i + 1], sum = wa + wb;
+        if (!sum) continue;
+        tmpC.subVectors(b, a);
+        const d = tmpC.length() || 1e-6;
+        tmpC.multiplyScalar((d - this.seg[i]) / d);
+        a.addScaledVector(tmpC, wa / sum); b.addScaledVector(tmpC, -wb / sum);
+      }
+      if (after) after(this.P);
+    }
+  }
+  // a smooth curve through the points, with frames carried along it, then each strand around it
+  draw(){
+    const { P, C, T, N, B, samples, n } = this;
+    for (let k = 0; k < samples; k++){
+      const s = k / (samples - 1) * (n - 1), i = Math.min(n - 2, Math.floor(s)), t = s - i, t2 = t * t, t3 = t2 * t;
+      const p0 = P[Math.max(0, i - 1)], p1 = P[i], p2 = P[i + 1], p3 = P[Math.min(n - 1, i + 2)];
+      for (const c of ['x', 'y', 'z'])
+        C[k][c] = .5 * (2 * p1[c] + (p2[c] - p0[c]) * t + (2 * p0[c] - 5 * p1[c] + 4 * p2[c] - p3[c]) * t2 + (3 * p1[c] - p0[c] - 3 * p2[c] + p3[c]) * t3);
+    }
+    for (let k = 0; k < samples; k++) T[k].subVectors(C[Math.min(samples - 1, k + 1)], C[Math.max(0, k - 1)]).normalize();
+    N[0].crossVectors(T[0], Z_AXIS); if (N[0].lengthSq() < 1e-6) N[0].crossVectors(T[0], Y_AXIS); N[0].normalize();
+    for (let k = 1; k < samples; k++) N[k].copy(N[k - 1]).addScaledVector(T[k], -T[k].dot(N[k - 1])).normalize();
+    for (let k = 0; k < samples; k++) B[k].crossVectors(T[k], N[k]);
+    for (const st of this.strands){
+      const geo = st.mesh.geometry, pos = geo.attributes.position.array, nor = geo.attributes.normal.array;
+      for (let k = 0, o = 0; k < samples; k++){
+        const f = k / (samples - 1) * this.twists * Math.PI * 2 + st.phase, cf = Math.cos(f) * st.off, sf = Math.sin(f) * st.off;
+        const cx = C[k].x + N[k].x * cf + B[k].x * sf, cy = C[k].y + N[k].y * cf + B[k].y * sf, cz = C[k].z + N[k].z * cf + B[k].z * sf;
+        for (let j = 0; j < SIDES; j++, o += 3){
+          const ang = j / SIDES * Math.PI * 2, ca = Math.cos(ang), sa = Math.sin(ang);
+          const nx = N[k].x * ca + B[k].x * sa, ny = N[k].y * ca + B[k].y * sa, nz = N[k].z * ca + B[k].z * sa;
+          nor[o] = nx; nor[o + 1] = ny; nor[o + 2] = nz;
+          pos[o] = cx + nx * st.r; pos[o + 1] = cy + ny * st.r; pos[o + 2] = cz + nz * st.r;
+        }
+      }
+      geo.attributes.position.needsUpdate = true;
+      geo.attributes.normal.needsUpdate = true;
+    }
+  }
+  still(){ this.Q.forEach((q, i) => q.copy(this.P[i])); }
+  // a forward push (+z) on only the points above a height: tips a falling cord over the front
+  tip(h, above, push){
+    const d = push * h * h;
+    for (let i = 0; i < this.n; i++) if (this.w[i] && this.P[i].y > above) this.P[i].z += d;
+  }
+  // points lying on the board lose most of their sideways speed: the cord doesn't skate about
+  grip(floor){
+    for (let i = 0; i < this.n; i++){
+      const p = this.P[i], q = this.Q[i];
+      if (this.w[i] && p.y <= floor + 1e-4){ q.x = lerp(q.x, p.x, .6); q.z = lerp(q.z, p.z, .6); }
+    }
+  }
+  moved(){ let m = 0; this.P.forEach((p, i) => { m = Math.max(m, this.Q[i].distanceTo(p)); }); return m; }
+}
+const SIDES = 6;
+function tubeGeometry(samples){
+  const g = new THREE.BufferGeometry();
+  for (const name of ['position', 'normal'])
+    g.setAttribute(name, new THREE.BufferAttribute(new Float32Array(samples * SIDES * 3), 3).setUsage(THREE.DynamicDrawUsage));
+  const idx = [];
+  for (let i = 0; i < samples - 1; i++) for (let j = 0; j < SIDES; j++){
+    const a = i * SIDES + j, b = i * SIDES + (j + 1) % SIDES;
+    idx.push(a, a + SIDES, b, b, a + SIDES, b + SIDES);
+  }
+  g.setIndex(idx);
+  return g;
+}
+const line = (a, b, n) => Array.from({ length: n }, (_, i) => a.clone().lerp(b, i / (n - 1)));
+
+// ── the hanger: from one lashing, through the ring, to the other ──
+// Slack, it falls and drapes over the roll; hung, the ring is drawn up and the cord pulls straight.
+const ROPE_N = 25, RING_I = 12;
+const ROPE_A = new THREE.Vector3(-.4, .033, 0), ROPE_B = new THREE.Vector3(.4, .033, 0);
+const RING_AT = new THREE.Vector3(0, .342, 0);         // where the ring is held while the scroll hangs
+const TIP_ABOVE = -.03, TIP_PUSH = 3.5;                 // slack, the cord above the roll's midline is pushed forward
+const RING_REST = new THREE.Vector3(0, -.10, .19);      // where the ring lies at rest: in front of the roll
+const HOLD_TO = new THREE.Vector3();
+const ARCH = Array.from({ length: ROPE_N }, (_, i) => {  // the arch it was modelled as, so it keeps that length
+  const u = i / (ROPE_N - 1);
+  return new THREE.Vector3(lerp(ROPE_A.x, ROPE_B.x, u), ROPE_A.y + (RING_AT.y - ROPE_A.y) * Math.sin(Math.PI * u), 0);
+});
+
+// what the hanger can rest on, in the scroll's own space
+function colliders(root, bottom, prog){
+  root.updateMatrixWorld(true);
+  const b = root.worldToLocal(bottom.getWorldPosition(tmpB));
+  const top = { y: 0, z: 0, r: .042 };                                  // the top roller
+  const roll = { y: b.y, z: b.z, r: lerp(.085, .05, clamp(prog * 3, 0, 1)) };   // the roll, thinning as it unwinds
+  return {
+    cyl: [top, roll],
+    // Closed, the two rollers sit against each other as one bundle. Two separate circles only
+    // touch along a thin seam, and a cord pushed out of one and into the other works its way
+    // down through it; so the space between them is filled, and the cord can only go over the top.
+    seam: prog < .1 ? [top, roll] : null,
+    floor: -root.position.y + .006,                                    // the stand's top board
+  };
+}
+const pushOut = (P, cyl, floor, seam) => {
+  for (const p of P){
+    if (Math.abs(p.x) < .6){
+      for (const c of cyl){
+        const dy = p.y - c.y, dz = p.z - c.z, d = Math.hypot(dy, dz);
+        if (d < c.r){ const k = c.r / (d || 1e-6); p.y = c.y + dy * k; p.z = c.z + dz * k; }
+      }
+      if (seam){
+        // the solid between the two rollers: a tapered capsule from one centre to the other
+        const [a, b] = seam, ey = b.y - a.y, ez = b.z - a.z;
+        const t = clamp(((p.y - a.y) * ey + (p.z - a.z) * ez) / (ey * ey + ez * ez), 0, 1);
+        const cy = a.y + ey * t, cz = a.z + ez * t, r = lerp(a.r, b.r, t);
+        const dy = p.y - cy, dz = p.z - cz, d = Math.hypot(dy, dz);
+        if (d < r){ const k = r / (d || 1e-6); p.y = cy + dy * k; p.z = cz + dz * k; }
+      }
+    }
+    if (floor !== undefined && p.y < floor) p.y = floor;
+  }
+};
+
+// ── the seal: a short tail from the knot, the wax seal hung on its end, two loose ends below ──
+const KNOT = new THREE.Vector3(0, -.140, .128), SEAL_TOP = new THREE.Vector3(0, -.190, .142);
+const ENDS = [[new THREE.Vector3(-.017, -.250, .144), new THREE.Vector3(-.017, -.298, .144)],
+              [new THREE.Vector3(.014, -.250, .144), new THREE.Vector3(.014, -.310, .144)]];
+const ROLL_FRONT = { y: -.08, z: .097, r: .062 };       // keeps the tail from swinging into the roll
+
+function rigLoose(root, bottom){
+  root.updateMatrixWorld(true);
+  const top = root.getObjectByName('TopRoller');
+  const get = n => root.getObjectByName(n);
+
+  // hanger cord, in place of the modelled rigid arch
+  const hide = n => { const o = get(n); o.visible = false; return o.material; };
+  const hanger = new Cord(ARCH, {
+    parent: top, samples: 90, twists: 30,
+    weights: ARCH.map((_, i) => i === 0 || i === ROPE_N - 1 ? 0 : 1),
+    strands: [{ material: hide('HangerStrand_0'), r: .0042, off: .0042 }, { material: hide('HangerStrand_1'), r: .0042, off: .0042, phase: Math.PI }],
+  });
+
+  // the seal's thread lives in the binding, so it shrinks away with it when the scroll opens
+  const binding = get('Binding');
+  const space = new THREE.Group();
+  space.position.set(0, .08, -.097);                    // the frame the binding's cords were modelled in
+  binding.add(space);
+  const seal = get('WaxSeal');
+  space.attach(seal);
+  const tail = new Cord(line(KNOT, SEAL_TOP, 6), {
+    parent: space, samples: 24, twists: 5, weights: [0, 1, 1, 1, 1, .25],   // the last point carries the seal
+    strands: [{ material: hide('CordTail_0'), r: .0028, off: .0028 }, { material: hide('CordTail_1'), r: .0028, off: .0028, phase: Math.PI }],
+  });
+  const ends = ENDS.map(([a, b], k) => new Cord(line(a, b, 5), {
+    parent: space, samples: 14, weights: [0, 1, 1, 1, 1],
+    strands: [{ material: hide('CordEnd_' + k), r: .0032 }],
+  }));
+
+  // tassels: two links each, the head on a cord from the end cap and the strands below it,
+  // so the strands trail the head and the swing travels down them like a wave
+  const tassels = ['', '001'].map(sfx => {
+    const x = sfx ? .585 : -.585;
+    const upper = new THREE.Group(); upper.position.set(x, -.01, -.012); top.add(upper);
+    ['TasselCord', 'TasselBead', 'TasselHead'].forEach(n => { const o = get(n + sfx); if (o) upper.attach(o); });
+    const lower = new THREE.Group(); lower.position.set(0, -.102, 0); upper.add(lower);
+    ['TasselWrap', 'TasselStrands'].forEach(n => { const o = get(n + sfx); if (o) lower.attach(o); });
+    return { upper, lower, a: 0, av: 0, b: 0, bv: 0, a2: 0, a2v: 0, b2: 0, b2v: 0, ph: Math.random() * 6.28 };
+  });
+
+  const r = { hanger, ring: get('HangerRing'), tail, ends, seal, sealRest: { q: seal.quaternion.clone(), off: seal.position.clone().sub(SEAL_TOP) },
+              sealDir: new THREE.Vector3().subVectors(SEAL_TOP, line(KNOT, SEAL_TOP, 6)[4]).normalize(),
+              space, binding, tassels, p: null, v: new THREE.Vector3(), acc: new THREE.Vector3(), accS: new THREE.Vector3(), clock: 0 };
+
+  // found on the stand as it would be: the hanger slack and already fallen forward over the roll
+  root.position.y = -ROLL_BOTTOM;
+  const col = colliders(root, bottom, 0);
+  for (let k = 0; k < 600; k++){
+    hanger.integrate(STEP, tmpF.set(0, -G, .8), .985);
+    hanger.tip(STEP, TIP_ABOVE, TIP_PUSH);
+    hanger.relax(14, P => pushOut(P, col.cyl, col.floor, col.seam));
+    hanger.grip(col.floor);
+  }
+  hanger.still(); drawHanger(r, 0);
+  r.asleep = true; r.calm = 0;
+  space.updateMatrixWorld(true); space.getWorldQuaternion(tmpQ2).invert();
+  for (let k = 0; k < 240; k++) stepSeal(r, tmpF.set(0, -G, 0).applyQuaternion(tmpQ2));
+  drawSeal(r);
+  return r;
+}
+
+// the seal's thread for one step, under a force already turned into the thread's own frame
+function stepSeal(r, f){
+  r.tail.integrate(STEP, f, .975);
+  r.tail.relax(10, P => pushOut(P, [ROLL_FRONT]));
+  // the seal hangs from the end of the tail and turns with it; the loose ends hang from the seal
+  const P = r.tail.P;
+  tmpA.subVectors(P[5], P[4]).normalize();
+  r.sealQ = (r.sealQ || new THREE.Quaternion()).setFromUnitVectors(r.sealDir, tmpA);
+  r.ends.forEach((e, k) => {
+    e.P[0].copy(ENDS[k][0]).sub(SEAL_TOP).applyQuaternion(r.sealQ).add(P[5]);
+    e.Q[0].copy(e.P[0]);
+    e.integrate(STEP, f, .97);
+    e.relax(8);
+  });
+}
+function drawSeal(r){
+  r.tail.draw();
+  r.ends.forEach(e => e.draw());
+  r.seal.quaternion.copy(r.sealQ).multiply(r.sealRest.q);
+  r.seal.position.copy(r.sealRest.off).applyQuaternion(r.sealQ).add(r.tail.P[5]);
+}
+
+// hang: 0 when the scroll rests or is carried, 1 once it is lifted to hang from its ring
+function swing(it, dt, hang){
+  const r = it.rig, pos = it.root.position;
+  // how the scroll actually moved, felt by everything hanging off it — smoothed, because a
+  // second difference over uneven frames is noisy in its own right
+  if (!r.p){ r.p = pos.clone(); r.v.set(0, 0, 0); r.accS.set(0, 0, 0); }
+  const v = tmpA.copy(pos).sub(r.p).divideScalar(dt);
+  r.acc.copy(v).sub(r.v).divideScalar(dt).clampLength(0, 40);
+  r.v.copy(v); r.p.copy(pos);
+  r.accS.lerp(r.acc, 1 - Math.exp(-dt * 25));
+  // lifting adds to gravity and dropping takes from it, but never past a third of it:
+  // a scroll set down briskly must not leave its loose parts weightless and flipping over
+  const ax = r.accS.x, az = r.accS.z, gy = Math.max(G * .35, G + r.accS.y);
+  const wind = draught(clockT);
+
+  // The hanger lying on the stand is asleep: not simulated and not redrawn, so it is perfectly
+  // still. The draught can't reach it there. Any lift, carry, hover or hang wakes it.
+  const disturbed = hang > 0 || r.accS.lengthSq() > 1e-4;
+  if (disturbed){ r.asleep = false; r.calm = 0; }
+  const col = r.asleep ? null : colliders(it.root, it.bottom, it.clipT / CLIP_END);
+  // the hand that lifts the ring takes hold where the ring lies and draws it up on a soft,
+  // critically damped spring (about half a second, no snap); let go, the ring simply falls
+  if (hang > 0 && !r.hold){ r.hold = r.hanger.P[RING_I].clone(); r.holdV = new THREE.Vector3(); }
+  if (hang <= 0) r.hold = null;
+
+  // the seal's thread feels the same forces, turned into its own frame (the binding tilts and shrinks)
+  const sealLive = r.binding.getWorldScale(tmpB).x > .02;
+  if (sealLive) r.space.getWorldQuaternion(tmpQ).invert();
+
+  r.clock = Math.min(r.clock + dt, STEP * 8);           // never more than 8 steps' catching up after a stall
+  let moved = 0;
+  while (r.clock >= STEP - 1e-9){
+    r.clock -= STEP;
+    if (!r.asleep){
+      if (r.hold){
+        // the hand carries the ring between its resting place in front of the roll and the top of
+        // the arch: up from the front when the scroll is lifted, down to the front when it is set
+        // down, so it lets go of a cord that already hangs down the front — never one balanced on
+        // top of the roller that could slide down the back
+        HOLD_TO.copy(RING_REST).lerp(RING_AT, hang);
+        r.holdV.addScaledVector(tmpB.subVectors(HOLD_TO, r.hold), 30 * STEP).multiplyScalar(1 - 2 * Math.sqrt(30) * STEP);
+        r.hold.addScaledVector(r.holdV, STEP);
+      }
+      // the draught reaches the hanger only while it hangs; slack, a faint lean forward lets it fall
+      // over the front of the roll and press against it, and once the scroll is still it loses its
+      // energy against the wood quickly
+      r.hanger.integrate(STEP, tmpF.set(-ax + wind.x * .4 * hang, -gy, -az + wind.z * .4 * hang + (1 - hang) * .8), disturbed ? .985 : .94);
+      // whatever height it is let go from, the slack cord tips over the front of the bundle
+      // rather than sliding down the back
+      if (hang < 1) r.hanger.tip(STEP, TIP_ABOVE, TIP_PUSH * (1 - hang));
+      r.hanger.relax(14, P => {
+        if (r.hold) P[RING_I].lerp(r.hold, .2);        // a steady grip for as long as the hand holds it
+        pushOut(P, col.cyl, col.floor, col.seam);
+      });
+      r.hanger.grip(col.floor);
+      moved = Math.max(moved, r.hanger.moved());
+    }
+    if (sealLive) stepSeal(r, tmpF.set(-ax + wind.x * .9, -gy, -az + wind.z * .6).applyQuaternion(tmpQ));
+
+    // tassels: the head swings from the cap; the strands follow it on a softer spring, a beat behind
+    r.tassels.forEach(q => {
+      const wx = wind.x * Math.cos(q.ph), wz = wind.z * Math.sin(q.ph + 1);
+      q.av += (-(gy / .17) * Math.sin(q.a) - ((ax - wx) / .17) * Math.cos(q.a) - 4.5 * q.av) * STEP;
+      q.bv += (-(gy / .17) * Math.sin(q.b) + ((az - wz) / .17) * Math.cos(q.b) - 4.5 * q.bv) * STEP;
+      q.a += q.av * STEP; q.b += q.bv * STEP;
+      q.a2v += (60 * (q.a - q.a2) + wx * 1.2 - 7 * q.a2v) * STEP;
+      q.b2v += (60 * (q.b - q.b2) - wz * 1.2 - 7 * q.b2v) * STEP;
+      q.a2 += q.a2v * STEP; q.b2 += q.b2v * STEP;
+    });
+  }
+  if (!r.asleep){
+    drawHanger(r, hang);
+    // settled: every point moving less than 0.02 mm a step for a third of a second
+    if (!disturbed && moved < 2e-5){
+      if (++r.calm > 20){ r.asleep = true; r.hanger.still(); }
+    } else r.calm = 0;
+  }
+  if (sealLive) drawSeal(r);
+  r.tassels.forEach(q => { q.upper.rotation.set(q.b, 0, q.a); q.lower.rotation.set(q.b2 - q.b, 0, q.a2 - q.a); });
+}
+function drawHanger(r, pull){
+  r.hanger.draw();
+  // the ring hangs below the cord when slack and sits on top of it when drawn up
+  r.ring.position.copy(r.hanger.P[RING_I]).y += lerp(-.024, .01, pull);
+}
+
+// ───── frame ─────
+function update(dt){
+  if (!ready) return;
+
+  // changing scrolls: both rise off the stand together, glide across level and steady,
+  // and the new one is set down. The three phases overlap a little so it never stops dead.
+  let air = 0, lean = 0, drift = 0;
+  if (glide){
+    glide.t += dt;
+    const p = clamp(glide.t / glide.dur, 0, 1);
+    const smooth = x => x * x * (3 - 2 * x);
+    const rise = smooth(clamp(p / .24, 0, 1)), fall = smooth(clamp((p - .76) / .24, 0, 1));
+    const q = (1 - Math.cos(Math.PI * clamp((p - .16) / .68, 0, 1))) / 2;   // even, sine-eased travel
+    offset = lerp(glide.from, glide.to, q);
+    air = (rise - fall) * AIR;
+    lean = -glide.dir * .022 * Math.sin(Math.PI * q);                       // the faintest lean into the move
+    drift = Math.sin(glide.t * 2.1) * .012 * (rise - fall);                  // breathing while airborne
+    needs = true;
+    if (p >= 1){ offset = glide.to; glide = null; }
+  }
+  const focus = wrap(Math.round(offset));
+  if (focus !== lastFocus){ lastFocus = focus; onFocus(focus); }
+
+  // the opening timeline of the scroll being read
+  if (openI >= 0 && dir){
+    const it = items[openI];
+    it.T = clamp(it.T + dt * (reduced ? 99 : dir > 0 ? 1 : 1.3) * dir, 0, T_END);
+    needs = true;
+    if (dir > 0 && it.T >= T_END){ dir = 0; document.body.classList.add('shown'); }
+    else if (dir < 0 && it.T <= 0){ settleClosed(it); }
+  }
+  const T = openI >= 0 ? items[openI].T : 0;
+  const lift = liftAt(T);
+
+  // the closed scroll on the stand stirs when you point at it
+  const wantHover = hovering && openI < 0 ? 1 : 0;
+  if (Math.abs(hoverK - wantHover) > .002){ hoverK += (wantHover - hoverK) * (1 - Math.pow(.002, dt)); needs = true; }
+
+  clockT += dt;
+  needs = false;               // the tassels never stop moving, so every frame is drawn
+
+  items.forEach((it, i) => {
+    let rel = ((i - offset) % N + N) % N; if (rel > N / 2) rel -= N;
+    const a = Math.abs(rel);
+    it.root.visible = a < 1;
+    if (!it.root.visible) return;
+    const isOpen = i === openI;
+    it.root.position.set(rel * spacing, -ROLL_BOTTOM + air + drift + (isOpen ? lift * LIFT : 0) + (i === focus ? hoverK * .03 : 0), 0);
+    it.root.rotation.set(i === focus ? -hoverK * .05 : 0, 0, lean);
+    const ct = isOpen ? clipAt(it.T) : 0;
+    if (ct !== it.clipT){ it.clipT = ct; it.action.time = ct; it.mixer.update(0); }
+    // hung from its ring once it has risen clear of the stand
+    const hang = isOpen ? clamp((lift - .02) / .25, 0, 1) : 0;
+    swing(it, dt, hang * hang * (3 - 2 * hang));
+  });
+  // a scroll out of view starts fresh when it comes back, so its jump across the loop is not felt as a jolt
+  items.forEach(it => { if (!it.root.visible) it.rig.p = null; });
+
+  // The camera frames what is actually there. While the scroll rises it mostly follows,
+  // so the stand drops away beneath it; then it centres on the ring and the bottom roller
+  // and draws back only as far as the unrolling sheet needs. Kept centred like that, the
+  // sheet opens towards the top and the bottom of the screen at once.
+  let ppu = ppuClosed, camY = camYClosed;
+  if (openI >= 0){
+    const it = items[openI];
+    it.root.updateMatrixWorld(true);
+    const rootY = it.root.position.y;
+    const top = rootY + OPEN_TOP;
+    const bottom = Math.min(it.bottom.getWorldPosition(tmpV).y - .09, rootY + ROLL_BOTTOM - .2);
+    const fit = Math.min(ppuClosed, H * .86 / (top - bottom), W * .92 / (HALF_W * 2));
+    const follow = camYClosed + .8 * (rootY + ROLL_BOTTOM);
+    ppu = Math.exp(lerp(Math.log(ppuClosed), Math.log(fit), lift));
+    camY = lerp(follow, (top + bottom) / 2, lift);
+  }
+  const dist = H / (2 * tanHalf * ppu);
+  camera.position.set(0, camY, dist + .08);
+  camera.lookAt(0, camY, .08);
+
+  // the stool, floor, lanterns and hills share that camera: they slide and shrink with it
+  const cradleNow = H / 2 + camY * ppu;                   // world y = 0, projected
+  const shift = cradleNow - cradleY;
+  groundEl.style.transform = `translateY(${shift.toFixed(1)}px)`;
+  stoolEl.style.transform = `scale(${(ppu / ppuClosed).toFixed(4)})`;
+  lanternsEl.style.transform = `translateY(${(shift * .35).toFixed(1)}px)`;
+  worldEl.style.transform = `translateY(${(shift * .12).toFixed(1)}px)`;
+
+  // reading panels sit either side of the open sheet
+  if (openI >= 0){
+    const halfPx = HALF_W * ppu, gap = 56;
+    const pw = clamp(W / 2 - halfPx - gap - 40, 200, 360);
+    document.documentElement.style.setProperty('--pw', pw + 'px');
+    panelL.style.left = (W / 2 - halfPx - gap - pw) + 'px';
+    panelR.style.left = (W / 2 + halfPx + gap) + 'px';
+  }
+
+  renderer.render(scene, camera);
+}
+
+const clock = new THREE.Clock();
+(function loop(){ update(Math.min(clock.getDelta(), .05)); requestAnimationFrame(loop); })();
+
+// ───── input ─────
+const ray = new THREE.Raycaster(), ptr = new THREE.Vector2(), tmpV = new THREE.Vector3();
+function pick(e){
+  if (!ready || openI >= 0 || glide) return false;
+  ptr.set(e.clientX / W * 2 - 1, -(e.clientY / H) * 2 + 1);
+  ray.setFromCamera(ptr, camera);
+  return ray.intersectObject(items[wrap(Math.round(offset))].root, true).length > 0;
+}
+canvas.addEventListener('pointermove', e => {
+  const h = pick(e);
+  if (h !== hovering){ hovering = h; canvas.classList.toggle('hot', h); needs = true; }
+});
+canvas.addEventListener('pointerleave', () => { hovering = false; canvas.classList.remove('hot'); needs = true; });
+canvas.addEventListener('click', e => {
+  if (openI >= 0){ if (dir === 0) closeScroll(); return; }   // clicking the dark around an open scroll rolls it up
+  if (pick(e)) openScroll();
+});
+$('close').addEventListener('click', closeScroll);
+
+let wheelAcc = 0, wheelLock = 0;
+addEventListener('wheel', e => {
+  e.preventDefault();
+  if (openI >= 0) return;
+  const now = performance.now();
+  wheelAcc += e.deltaY;
+  // one scroll per gesture, and nothing new until the glide has landed
+  if (glide){ wheelAcc = 0; return; }
+  if (now > wheelLock && Math.abs(wheelAcc) > 40){
+    go(wrap(Math.round(target)) + Math.sign(wheelAcc));
+    wheelAcc = 0; wheelLock = now + 400;
+  }
+}, { passive:false });
+
+let touchY = null, touchX = null;
+addEventListener('touchstart', e => { touchY = e.touches[0].clientY; touchX = e.touches[0].clientX; }, { passive:true });
+addEventListener('touchend', e => {
+  if (touchY == null) return;
+  const dy = touchY - e.changedTouches[0].clientY, dx = touchX - e.changedTouches[0].clientX;
+  const d = Math.abs(dx) > Math.abs(dy) ? dx : dy;
+  if (Math.abs(d) > 40) go(wrap(Math.round(target)) + Math.sign(d));
+  touchY = touchX = null;
+});
+
+addEventListener('keydown', e => {
+  if (['ArrowDown','ArrowRight','PageDown'].includes(e.key)){ go(wrap(Math.round(target)) + 1); e.preventDefault(); }
+  if (['ArrowUp','ArrowLeft','PageUp'].includes(e.key)){ go(wrap(Math.round(target)) - 1); e.preventDefault(); }
+  if (e.key === 'Enter' || e.key === ' '){ openScroll(); e.preventDefault(); }
+  if (e.key === 'Escape') closeScroll();
+});
+
+// for checking the sequence by hand when frames are not running
+window.archive = { items, camera, openScroll, closeScroll, go,
+  state: () => ({ ready, offset:+offset.toFixed(3), target, openI, dir, gliding: !!glide, T: openI >= 0 ? +items[openI].T.toFixed(2) : 0 }),
+  step(sec, fps = 60){ for (let k = 0; k < sec * fps; k++){ needs = true; update(1 / fps); } } };
+</script>
+</body>
+</html>
